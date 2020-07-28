@@ -1,0 +1,1275 @@
+-- ====================================================================
+--
+--  Object Test Program
+--  ===================
+--
+--  This is a long, complex test program for objects.  I've tried to set
+--  up a complicated structure of usages and inheritance, to give that
+--  stuff a good workout.  Here's a diagram of the overall structure.
+--  All the links go top to bottom unless there is an arrow indicating
+--  something else, and are inherit unless they explicitly say use, with
+--  the exception of the links to test_program of course.  They are
+--  always use.
+--
+--     a        b        c        d        e        f
+--     |        |        |        |        |        |
+--     |        |        |        |        |        |
+--     |        |        |        |        |        |
+--     |        |        |        |        |        |
+--     g        h--use-->i        j        k        l
+--     |        |        |        |        |        |
+--     |        |        |        |        |        |
+--     |        |        |        |        |        |
+--     |        |        |        |        |        |
+--     m        n        o------->p        q--use-->r
+--     |        |                 |                 |
+--     |        |-----------------|---------------->|
+--     |        |                 |                 |
+--     |        |                 |                 |
+--     |        |                 s---------------->t
+--     |        |                 |                 |
+--     |        |                 |                 |
+--     |        |                 |                 |
+--     |        |                 |                 |
+--     |        |                 |                 u
+--     |        |                 |                 |
+--     |        |                 |                 |
+--     |        |                 |                 |
+--     |        |                 |                 |
+--     =================Test_Program=================
+--
+--  My most worrisome concern is that name binding be correct.
+--  Accordingly, this set of programs doesn't really give the object
+--  system a good workout, it is aimed at making sure names refer to the
+--  right things.
+--
+
+--
+--  My PC can't handle this file all at once, so I break it up into many
+--  small files.  This is a dummy program, just so the driver script
+--  doesn't mess up.
+--
+
+-- ==========================================================================
+--
+--  We need a package visible to everyone, so whichever procedure is
+--  called can notify its caller.
+--
+
+package object_test_pack;
+
+   var Callchain := [];
+
+end object_test_pack;
+
+--
+--  CLASS_A
+--
+
+class class_a;
+
+   procedure varies;
+
+end class_a;
+
+class body class_a;
+
+   use object_test_pack;
+
+   procedure varies;
+
+      Callchain with:= "class_a.varies";
+      return "method";
+
+   end varies;
+
+end class_a;
+
+--
+--  CLASS_B
+--
+
+class class_b;
+
+end class_b;
+
+class body class_b;
+
+   use object_test_pack;
+
+end class_b;
+
+--
+--  CLASS_C
+--
+
+class class_c;
+
+   var vc1 := 5, vc2 := 6;
+
+   procedure create(v1,v2);
+
+end class_c;
+
+class body class_c;
+
+   use object_test_pack;
+
+   procedure create(v1,v2);
+
+      Callchain with:= "class_c.create";
+      vc1 := v1*v2*vc1;
+
+   end create;
+
+end class_c;
+
+--
+--  CLASS_D
+--
+
+class class_d;
+
+   var varies := "variable";
+
+end class_d;
+
+class body class_d;
+
+   use object_test_pack;
+
+end class_d;
+
+--
+--  CLASS_E
+--
+
+class class_e;
+
+   var ve1;
+
+end class_e;
+
+class body class_e;
+
+   use object_test_pack;
+
+end class_e;
+
+--
+--  CLASS_F
+--
+
+class class_f;
+
+   var vf1 := 100, vf2 := {x ** 2 : x in [1 .. 10]};
+
+   procedure modify_self(arg);
+
+end class_f;
+
+class body class_f;
+
+   use object_test_pack;
+
+   var next_iteration_value;
+
+   procedure modify_self(arg);
+
+      vf1 := arg;
+
+   end modify_self;
+
+   procedure self + right;
+
+      Callchain with:= "class_f.+";
+      Callchain with:= str(right);
+      return "class_f.+";
+
+   end;
+      
+   procedure self - right;
+
+      Callchain with:= "class_f.-";
+      Callchain with:= str(right);
+      return "class_f.-";
+
+   end;
+      
+   procedure self * right;
+
+      Callchain with:= "class_f.*";
+      Callchain with:= str(right);
+      return "class_f.*";
+
+   end;
+      
+   procedure self / right;
+
+      Callchain with:= "class_f./";
+      Callchain with:= str(right);
+      return "class_f./";
+
+   end;
+      
+   procedure self ** right;
+
+      Callchain with:= "class_f.**";
+      Callchain with:= str(right);
+      return "class_f.**";
+
+   end;
+      
+   procedure self mod right;
+
+      Callchain with:= "class_f.mod";
+      Callchain with:= str(right);
+      return "class_f.mod";
+
+   end;
+      
+   procedure self min right;
+
+      Callchain with:= "class_f.min";
+      Callchain with:= str(right);
+      return "class_f.min";
+
+   end;
+      
+   procedure self max right;
+
+      Callchain with:= "class_f.max";
+      Callchain with:= str(right);
+      return "class_f.max";
+
+   end;
+      
+   procedure self with right;
+
+      Callchain with:= "class_f.with";
+      Callchain with:= str(right);
+      return "class_f.with";
+
+   end;
+      
+   procedure self less right;
+
+      Callchain with:= "class_f.less";
+      Callchain with:= str(right);
+      return "class_f.less";
+
+   end;
+      
+   procedure self lessf right;
+
+      Callchain with:= "class_f.lessf";
+      Callchain with:= str(right);
+      return "class_f.lessf";
+
+   end;
+      
+   procedure self npow right;
+
+      Callchain with:= "class_f.npow";
+      Callchain with:= str(right);
+      return "class_f.npow";
+
+   end;
+      
+   procedure self < right;
+
+      Callchain with:= "class_f.<";
+      Callchain with:= str(right);
+      return true;
+
+   end;
+      
+   procedure left in self;
+
+      Callchain with:= "class_f.in";
+      Callchain with:= str(left);
+      return true;
+
+   end;
+      
+   procedure - self;
+
+      Callchain with:= "class_f.-";
+      return "class_f.-";
+
+   end;
+      
+   procedure domain self;
+
+      Callchain with:= "class_f.domain";
+      return "class_f.domain";
+
+   end;
+      
+   procedure range self;
+
+      Callchain with:= "class_f.range";
+      return "class_f.range";
+
+   end;
+      
+   procedure pow self;
+
+      Callchain with:= "class_f.pow";
+      return "class_f.pow";
+
+   end;
+      
+   procedure arb self;
+
+      Callchain with:= "class_f.arb";
+      return "class_f.arb";
+
+   end;
+      
+   procedure # self;
+
+      Callchain with:= "class_f.#";
+      return "class_f.#";
+
+   end;
+      
+   procedure from self;
+
+      Callchain with:= "class_f.from";
+      return "class_f.from";
+
+   end;
+      
+   procedure fromb self;
+
+      Callchain with:= "class_f.fromb";
+      return "class_f.fromb";
+
+   end;
+      
+   procedure frome self;
+
+      Callchain with:= "class_f.frome";
+      return "class_f.frome";
+
+   end;
+      
+   procedure self (index);
+
+      Callchain with:= "class_f.of";
+      Callchain with:= str(index);
+      return "class_f.of";
+
+   end;
+      
+   procedure self {index};
+
+      Callchain with:= "class_f.ofa";
+      Callchain with:= str(index);
+      return "class_f.ofa";
+
+   end;
+      
+   procedure self (left_index .. right_index);
+
+      Callchain with:= "class_f.slice";
+      Callchain with:= str(left_index);
+      Callchain with:= str(right_index);
+      return "class_f.slice";
+
+   end;
+      
+   procedure self (index..);
+
+      Callchain with:= "class_f.end";
+      Callchain with:= str(index);
+      return "class_f.end";
+
+   end;
+      
+   procedure self (index) := value;
+
+      Callchain with:= "class_f.sof";
+      Callchain with:= str(index);
+      Callchain with:= str(value);
+
+   end;
+      
+   procedure self {index} := value;
+
+      Callchain with:= "class_f.sofa";
+      Callchain with:= str(index);
+      Callchain with:= str(value);
+
+   end;
+      
+   procedure self (left_index .. right_index) := value;
+
+      Callchain with:= "class_f.sslice";
+      Callchain with:= str(left_index);
+      Callchain with:= str(right_index);
+      Callchain with:= str(value);
+
+   end;
+      
+   procedure self (index..) := value;
+
+      Callchain with:= "class_f.send";
+      Callchain with:= str(index);
+      Callchain with:= str(value);
+
+   end;
+      
+   procedure iterator_start;
+
+      next_iteration_value := 0;
+
+   end iterator_start;
+      
+   procedure iterator_next;
+
+      if next_iteration_value = 10 then
+         return om;
+      end if;
+
+      next_iteration_value +:= 1;
+      return [[next_iteration_value, next_iteration_value ** 2]];
+
+   end;
+      
+   procedure selfstr;
+
+      Callchain with:= "class_f.selfstr";
+      return "class_f.selfstr";
+
+   end;
+      
+end class_f;
+
+-- =======================-- ==========================================================================
+--
+--  We need a package visible to everyone, so whichever procedure is
+--  called can notify its caller.
+--
+
+package object_test_pack;
+
+   var Callchain := [];
+
+end object_test_pack;
+
+--
+--  CLASS_A
+--
+
+class class_a;
+
+   procedure varies;
+
+end class_a;
+
+class body class_a;
+
+   use object_test_pack;
+
+   procedure varies;
+
+      Callchain with:= "class_a.varies";
+      return "method";
+
+   end varies;
+
+end class_a;
+
+--
+--  CLASS_B
+--
+
+class class_b;
+
+end class_b;
+
+class body class_b;
+
+   use object_test_pack;
+
+end class_b;
+
+--
+--  CLASS_C
+--
+
+class class_c;
+
+   var vc1 := 5, vc2 := 6;
+
+   procedure create(v1,v2);
+
+end class_c;
+
+class body class_c;
+
+   use object_test_pack;
+
+   procedure create(v1,v2);
+
+      Callchain with:= "class_c.create";
+      vc1 := v1*v2*vc1;
+
+   end create;
+
+end class_c;
+
+--
+--  CLASS_D
+--
+
+class class_d;
+
+   var varies := "variable";
+
+end class_d;
+
+class body class_d;
+
+   use object_test_pack;
+
+end class_d;
+
+--
+--  CLASS_E
+--
+
+class class_e;
+
+   var ve1;
+
+end class_e;
+
+class body class_e;
+
+   use object_test_pack;
+
+end class_e;
+
+--
+--  CLASS_F
+--
+
+class class_f;
+
+   var vf1 := 100, vf2 := {x ** 2 : x in [1 .. 10]};
+
+   procedure modify_self(arg);
+
+end class_f;
+
+class body class_f;
+
+   use object_test_pack;
+
+   var next_iteration_value;
+
+   procedure modify_self(arg);
+
+      vf1 := arg;
+
+   end modify_self;
+
+   procedure self + right;
+
+      Callchain with:= "class_f.+";
+      Callchain with:= str(right);
+      return "class_f.+";
+
+   end;
+      
+   procedure self - right;
+
+      Callchain with:= "class_f.-";
+      Callchain with:= str(right);
+      return "class_f.-";
+
+   end;
+      
+   procedure self * right;
+
+      Callchain with:= "class_f.*";
+      Callchain with:= str(right);
+      return "class_f.*";
+
+   end;
+      
+   procedure self / right;
+
+      Callchain with:= "class_f./";
+      Callchain with:= str(right);
+      return "class_f./";
+
+   end;
+      
+   procedure self ** right;
+
+      Callchain with:= "class_f.**";
+      Callchain with:= str(right);
+      return "class_f.**";
+
+   end;
+      
+   procedure self mod right;
+
+      Callchain with:= "class_f.mod";
+      Callchain with:= str(right);
+      return "class_f.mod";
+
+   end;
+      
+   procedure self min right;
+
+      Callchain with:= "class_f.min";
+      Callchain with:= str(right);
+      return "class_f.min";
+
+   end;
+      
+   procedure self max right;
+
+      Callchain with:= "class_f.max";
+      Callchain with:= str(right);
+      return "class_f.max";
+
+   end;
+      
+   procedure self with right;
+
+      Callchain with:= "class_f.with";
+      Callchain with:= str(right);
+      return "class_f.with";
+
+   end;
+      
+   procedure self less right;
+
+      Callchain with:= "class_f.less";
+      Callchain with:= str(right);
+      return "class_f.less";
+
+   end;
+      
+   procedure self lessf right;
+
+      Callchain with:= "class_f.lessf";
+      Callchain with:= str(right);
+      return "class_f.lessf";
+
+   end;
+      
+   procedure self npow right;
+
+      Callchain with:= "class_f.npow";
+      Callchain with:= str(right);
+      return "class_f.npow";
+
+   end;
+      
+   procedure self < right;
+
+      Callchain with:= "class_f.<";
+      Callchain with:= str(right);
+      return true;
+
+   end;
+      
+   procedure left in self;
+
+      Callchain with:= "class_f.in";
+      Callchain with:= str(left);
+      return true;
+
+   end;
+      
+   procedure - self;
+
+      Callchain with:= "class_f.-";
+      return "class_f.-";
+
+   end;
+      
+   procedure domain self;
+
+      Callchain with:= "class_f.domain";
+      return "class_f.domain";
+
+   end;
+      
+   procedure range self;
+
+      Callchain with:= "class_f.range";
+      return "class_f.range";
+
+   end;
+      
+   procedure pow self;
+
+      Callchain with:= "class_f.pow";
+      return "class_f.pow";
+
+   end;
+      
+   procedure arb self;
+
+      Callchain with:= "class_f.arb";
+      return "class_f.arb";
+
+   end;
+      
+   procedure # self;
+
+      Callchain with:= "class_f.#";
+      return "class_f.#";
+
+   end;
+      
+   procedure from self;
+
+      Callchain with:= "class_f.from";
+      return "class_f.from";
+
+   end;
+      
+   procedure fromb self;
+
+      Callchain with:= "class_f.fromb";
+      return "class_f.fromb";
+
+   end;
+      
+   procedure frome self;
+
+      Callchain with:= "class_f.frome";
+      return "class_f.frome";
+
+   end;
+      
+   procedure self (index);
+
+      Callchain with:= "class_f.of";
+      Callchain with:= str(index);
+      return "class_f.of";
+
+   end;
+      
+   procedure self {index};
+
+      Callchain with:= "class_f.ofa";
+      Callchain with:= str(index);
+      return "class_f.ofa";
+
+   end;
+      
+   procedure self (left_index .. right_index);
+
+      Callchain with:= "class_f.slice";
+      Callchain with:= str(left_index);
+      Callchain with:= str(right_index);
+      return "class_f.slice";
+
+   end;
+      
+   procedure self (index..);
+
+      Callchain with:= "class_f.end";
+      Callchain with:= str(index);
+      return "class_f.end";
+
+   end;
+      
+   procedure self (index) := value;
+
+      Callchain with:= "class_f.sof";
+      Callchain with:= str(index);
+      Callchain with:= str(value);
+
+   end;
+      
+   procedure self {index} := value;
+
+      Callchain with:= "class_f.sofa";
+      Callchain with:= str(index);
+      Callchain with:= str(value);
+
+   end;
+      
+   procedure self (left_index .. right_index) := value;
+
+      Callchain with:= "class_f.sslice";
+      Callchain with:= str(left_index);
+      Callchain with:= str(right_index);
+      Callchain with:= str(value);
+
+   end;
+      
+   procedure self (index..) := value;
+
+      Callchain with:= "class_f.send";
+      Callchain with:= str(index);
+      Callchain with:= str(value);
+
+   end;
+      
+   procedure iterator_start;
+
+      next_iteration_value := 0;
+
+   end iterator_start;
+      
+   procedure iterator_next;
+
+      if next_iteration_value = 10 then
+         return om;
+      end if;
+
+      next_iteration_value +:= 1;
+      return [[next_iteration_value, next_iteration_value ** 2]];
+
+   end;
+      
+   procedure selfstr;
+
+      Callchain with:= "class_f.selfstr";
+      return "class_f.selfstr";
+
+   end;
+      
+end class_f;
+
+-- ==================================================================
+--===========================================
+--
+--  CLASS_G
+--
+
+class class_g;
+
+   inherit class_a;
+
+   var public := "YES";
+
+end class_g;
+
+class body class_g;
+
+   use object_test_pack;
+
+end class_g;
+
+--
+--  CLASS_H
+--
+
+class class_h;
+
+   inherit class_b;
+
+end class_h;
+
+class body class_h;
+
+   use object_test_pack;
+
+end class_h;
+
+--
+--  CLASS_I
+--
+
+class class_i;
+
+   inherit class_c;
+
+end class_i;
+
+class body class_i;
+
+   use object_test_pack;
+
+end class_i;
+
+--
+--  CLASS_J
+--
+
+class class_j;
+
+   inherit class_d;
+
+end class_j;
+
+class body class_j;
+
+   use object_test_pack;
+
+end class_j;
+
+--
+--  CLASS_K
+--
+
+class class_k;
+
+   inherit class_e;
+
+end class_k;
+
+class body class_k;
+
+   use object_test_pack;
+
+end class_k;
+
+--
+--  CLASS_L
+--
+
+class class_l;
+
+   inherit class_f;
+
+end class_l;
+
+class body class_l;
+
+   use object_test_pack;
+
+   var public := "NO";
+
+end class_l;
+
+-- ==========================================================
+--
+--  CLASS_M
+--
+
+class class_m;
+
+   inherit class_g;
+
+end class_m;
+
+class body class_m;
+
+   use object_test_pack;
+
+end class_m;
+
+--
+--  CLASS_N
+--
+
+class class_n;
+
+   inherit class_h;
+
+   procedure pn_1(p);
+
+end class_n;
+
+class body class_n;
+
+   use object_test_pack;
+
+   procedure pn_1(p);
+
+      var x;
+
+      Callchain with:= "class_n.pn_1";
+      x := 0;
+      return pn_2;
+
+      procedure pn_2;
+
+         return x +:= 1;
+
+      end pn_2;
+
+   end pn_1;
+
+end class_n;
+
+--
+--  CLASS_O
+--
+
+class class_o;
+
+   inherit class_i;
+
+end class_o;
+
+class body class_o;
+
+   use object_test_pack, class_h;
+
+end class_o;
+
+--
+--  CLASS_P
+--
+
+class class_p;
+
+   inherit class_j, class_o;
+
+end class_p;
+
+class body class_p;
+
+   use object_test_pack;
+
+end class_p;
+
+--
+--  CLASS_Q
+--
+
+class class_q;
+
+   inherit class_k;
+
+end class_q;
+
+class body class_q;
+
+   use object_test_pack;
+
+end class_q;
+
+--
+--  CLASS_R
+--
+
+class class_r;
+
+   inherit class_l;
+
+end class_r;
+
+class body class_r;
+
+   use object_test_pack, class_q;
+
+end class_r;
+
+-- =============================================================
+--
+--  CLASS_S
+--
+
+class class_s;
+
+   inherit class_p;
+
+end class_s;
+
+class body class_s;
+
+   use object_test_pack;
+
+end class_s;
+
+--
+--  CLASS_T
+--
+
+class class_t;
+
+   inherit class_r, class_n, class_s;
+
+   procedure create(v1,v2,v3);
+
+end class_t;
+
+class body class_t;
+
+   use object_test_pack;
+
+   procedure create(v1,v2,v3);
+
+      Callchain with:= "class_t.create";
+      class_c.create(1,2);
+
+   end create;
+
+end class_t;
+
+--
+--  CLASS_U
+--
+
+class class_u;
+
+   inherit class_t;
+
+end class_u;
+
+class body class_u;
+
+   use object_test_pack;
+
+end class_u;
+
+-- =============================================================
+--
+--  Main test program
+--
+
+program test_program;
+
+   use test_common, object_test_pack, class_m, class_n, class_s, class_u;
+
+   begin_test("Objects test");
+
+   --
+   --  First, we create an object instance checking whether all the
+   --  correct initialization procedures are called.
+   --
+
+   Callchain := [];
+   u := class_u(1,2,3);
+
+   if [u.vf1,   u.vf2,                      u.vc1,  u.vc2  ] /=
+      [100,     {x ** 2 : x in [1 .. 10]},  10,     6      ]  then
+      
+      log_error(["Object initialization failed!",
+                 "u.vf1 = "+str(u.vf1),
+                 "u.vf2 = "+str(u.vf2),
+                 "u.vc1 = "+str(u.vc1),
+                 "u.vc2 = "+str(u.vc2)]);
+
+   end if;
+
+   if Callchain /= ["class_t.create","class_c.create"] then
+
+      log_error(["Improper call sequence",
+                 "Callchain = "+str(Callchain)]);
+
+   end if;
+
+   --
+   --  Check some name overloading.  Varies is a variable in class_d and
+   --  a method in class_a;
+   --
+
+   m := class_m();
+
+   Callchain := [];
+   if m.varies() /= "method" or Callchain /= ["class_a.varies"] then
+
+      log_error(["Bad name binding",
+                 "Callchain = "+str(Callchain),
+                 "m.varies = "+str(m.varies)]);
+
+   end if;
+
+   Callchain := [];
+   if u.varies /= "variable" or Callchain /= [] then
+
+      log_error(["Bad name binding",
+                 "Callchain = "+str(Callchain),
+                 "u.varies = "+str(u.varies)]);
+
+   end if;
+
+   --
+   --  Make sure we can use slots as left hand sides.
+   --
+
+   u.vf1 := [1,2,3,4,5];
+   u.vf1(1) := 5;
+   if u.vf1 /= [5,2,3,4,5] then
+
+      log_error(["Unable to set slots",
+                 "u = "+str(u)]);
+
+   end if;
+
+   --
+   --  Make sure methods re-write self.
+   --
+
+   u := class_u(1,2,3);
+   u.modify_self("new");
+   if [u.vf1,   u.vf2,                      u.vc1,  u.vc2  ] /=
+      ["new",   {x ** 2 : x in [1 .. 10]},  10,     6      ]  then
+      
+      log_error(["Self modification failed!",
+                 "u.vf1 = "+str(u.vf1),
+                 "u.vf2 = "+str(u.vf2),
+                 "u.vc1 = "+str(u.vc1),
+                 "u.vc2 = "+str(u.vc2)]);
+
+   end if;
+
+   --
+   --  Test methods as first class objects.
+   --
+
+   x := u.pn_1;
+   if not is_procedure(x) then
+
+      log_error(["Error in methods as first class objects",
+                 "x = "+str(x)]);
+
+   end if;
+
+   x := x(1);
+   if not is_procedure(x) then
+
+      log_error(["Error in methods as first class objects",
+                 "x = "+str(x)]);
+
+   end if;
+
+   x := {x() : i in [1 .. 10]};
+   if x /= {1 .. 10} then
+
+      log_error(["Error in methods as first class objects",
+                 "x = "+str(x)]);
+
+   end if;
+
+   --
+   --  We make a set of objects, primarily to test our internal hash code
+   --  and equality tests.
+   --
+
+   S := {};
+   for i in [1 .. 10] loop
+
+      u := class_u(1,2,3);
+      u.vf1 := i;
+      s with:= u;
+
+   end loop;
+
+   if #S /= 10 then
+
+      log_error(["Error in equality test for objects",
+                 "S = "+str(S)]);
+
+   end if;
+
+   u := class_u(1,2,3);
+   u.vf1 := 1;
+   S with:= u;
+   if #S /= 10 then
+
+      log_error(["Error in equality test for objects",
+                 "S = "+str(S)]);
+
+   end if;
+
+   end_test;
+
+end test_program;

@@ -1,0 +1,17 @@
+-- ============================================================================
+--
+--  The following programs test error conditions which the interpreter
+--  should catch, and abend.
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("EXP range error test");
+
+   x := exp(5.5e20);
+
+   End_Test;
+
+end test_program;

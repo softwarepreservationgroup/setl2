@@ -1,0 +1,278 @@
+-- ===================================================================
+--
+--  From Operations Test
+--  ====================
+--
+--  This file is intended to test the from operators described on pages
+--  97-99 of "Programming With Sets: An Introduction to SETL".
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Test_Sets := { {char(x) : x in [abs("a") .. abs("z")]} } +
+                { {1 .. x} : x in {1 .. 10}} +
+                { {1 .. 100}, pow({1 .. 8}) };
+
+   Begin_Test("From operations test");
+
+   Test_Tuples := { [char(x) : x in [abs("a") .. abs("z")]] } +
+                  { [1 .. x] : x in {1 .. 10}} +
+                  { [1 .. 30], [],
+                    [1, om, om, om, om, om, om, om, om, om, om, 1] };
+
+   Temp := ["This"];
+   Temp(50) := "is";
+   Temp(100) := "it!";
+   Test_Tuples with:= Temp;
+   
+   --
+   --  Test the from operator on sets.
+   --
+
+   for Test in Test_Sets loop
+
+      while #Test > 0 loop
+
+         Copy := Test;
+         Element from Copy;
+      
+         if #Copy /= #Test - 1 or 
+            Element notin Test or
+            Element in Copy  or
+            (exists x in Copy | x notin Test) then
+
+            Log_Error(["From failed!",
+                       "Test = "+str(Test),
+                       "Copy = "+str(Copy),
+                       "Element = "+str(Element)]);
+
+         end if;
+
+         Test := Copy;
+
+      end loop;
+         
+   end loop;
+
+   for Test in Test_Sets loop
+
+      while #Test > 0 loop
+
+         Copy := Test;
+         Element_Copy := Element from Copy;
+      
+         if #Copy /= #Test - 1 or 
+            Element_Copy /= Element or
+            Element notin Test or
+            Element in Copy  or
+            (exists x in Copy | x notin Test) then
+
+            Log_Error(["From failed!",
+                       "Test = "+str(Test),
+                       "Copy = "+str(Copy),
+                       "Element = "+str(Element)]);
+
+         end if;
+
+         Test := Copy;
+
+      end loop;
+         
+   end loop;
+
+   --
+   --  Test the from operator on tuples.
+   --
+
+   for Test in Test_Tuples loop
+
+      while #Test > 0 loop
+
+         Copy := Test;
+         Element from Copy;
+      
+         Copy_Length := #Test - 1;
+
+         while Copy_Length > 0 and Test(Copy_Length) = om loop
+
+            Copy_Length -:= 1;
+
+         end loop;
+
+         if #Copy /= Copy_Length or
+            Element /= Test(#Test) or
+            Copy /= Test(1 .. #Copy) then
+
+            Log_Error(["From failed!",
+                       "Test = "+str(Test),
+                       "Copy = "+str(Copy),
+                       "Element = "+str(Element)]);
+
+         end if;
+
+         Test := Copy;
+
+      end loop;
+         
+   end loop;
+
+   for Test in Test_Tuples loop
+
+      while #Test > 0 loop
+
+         Copy := Test;
+         Element_Copy := Element from Copy;
+      
+         Copy_Length := #Test - 1;
+
+         while Copy_Length > 0 and Test(Copy_Length) = om loop
+
+            Copy_Length -:= 1;
+
+         end loop;
+
+         if #Copy /= Copy_Length or
+            Element_Copy /= Element or
+            Element /= Test(#Test) or
+            Copy /= Test(1 .. #Copy) then
+
+            Log_Error(["From failed!",
+                       "Test = "+str(Test),
+                       "Copy = "+str(Copy),
+                       "Element = "+str(Element)]);
+
+         end if;
+
+         Test := Copy;
+
+      end loop;
+         
+   end loop;
+
+   --
+   --  Test the fromb operator on tuples.
+   --
+
+   for Test in Test_Tuples loop
+
+      while #Test > 0 loop
+
+         Copy := Test;
+         Element fromb Copy;
+      
+         if #Copy /= #Test - 1 or 
+            Element /= Test(1) or
+            Copy /= Test(2 .. #Test) then
+
+            Log_Error(["Fromb failed!",
+                       "Test = "+str(Test),
+                       "Copy = "+str(Copy),
+                       "Element = "+str(Element)]);
+
+         end if;
+
+         Test := Copy;
+
+      end loop;
+         
+   end loop;
+
+   for Test in Test_Tuples loop
+
+      while #Test > 0 loop
+
+         Copy := Test;
+         Element_Copy := Element fromb Copy;
+      
+         if #Copy /= #Test - 1 or 
+            Element_Copy /= Element or
+            Element /= Test(1) or
+            Copy /= Test(2 .. #Test) then
+
+            Log_Error(["Fromb failed!",
+                       "Test = "+str(Test),
+                       "Copy = "+str(Copy),
+                       "Element = "+str(Element)]);
+
+         end if;
+
+         Test := Copy;
+
+      end loop;
+         
+   end loop;
+
+   --
+   --  Test the frome operator on tuples.
+   --
+
+   for Test in Test_Tuples loop
+
+      while #Test > 0 loop
+
+         Copy := Test;
+         Element frome Copy;
+      
+         Copy_Length := #Test - 1;
+
+         while Copy_Length > 0 and Test(Copy_Length) = om loop
+
+            Copy_Length -:= 1;
+
+         end loop;
+
+         if #Copy /= Copy_Length or
+            Element /= Test(#Test) or
+            Copy /= Test(1 .. #Copy) then
+
+            Log_Error(["Frome failed!",
+                       "Test = "+str(Test),
+                       "Copy = "+str(Copy),
+                       "Element = "+str(Element)]);
+
+         end if;
+
+         Test := Copy;
+
+      end loop;
+         
+   end loop;
+
+   for Test in Test_Tuples loop
+
+      while #Test > 0 loop
+
+         Copy := Test;
+         Element_Copy := Element frome Copy;
+      
+         Copy_Length := #Test - 1;
+
+         while Copy_Length > 0 and Test(Copy_Length) = om loop
+
+            Copy_Length -:= 1;
+
+         end loop;
+
+         if #Copy /= Copy_Length or
+            Element_Copy /= Element or
+            Element /= Test(#Test) or
+            Copy /= Test(1 .. #Copy) then
+
+            Log_Error(["Frome failed!",
+                       "Test = "+str(Test),
+                       "Copy = "+str(Copy),
+                       "Element = "+str(Element)]);
+
+         end if;
+
+         Test := Copy;
+
+      end loop;
+         
+   end loop;
+
+   End_Test;
+
+end test_program;

@@ -1,0 +1,19 @@
+-- ==========================================================================
+--
+--  The following programs test error conditions which the interpreter
+--  should catch, and abend.
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("String index error test");
+
+   string := "length 8";
+
+   print(string(10..));
+
+   End_Test;
+
+end test_program;

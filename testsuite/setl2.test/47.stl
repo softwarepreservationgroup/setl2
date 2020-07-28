@@ -1,0 +1,18 @@
+program test_program; 
+    -- more tests of linsort
+use sort_pak, Test_Common;
+
+Begin_Test("testing linsort");
+tup_to_sort := [[x,x]: x in [-10,1,1,2,3,2,2,1,0,-1,1,2,3,4,3,4,2,0]];
+
+tup_sorted := linsort(tup_to_sort);
+ok := forall i in [1..#tup_sorted-1] | tup_sorted(i)(1) < tup_sorted(i+1)(1)
+   or (tup_sorted(i)(1) = tup_sorted(i+1)(1) and tup_sorted(i)(2) <= tup_sorted(i+1)(2));
+if  not ok then Log_Error(["linsort failed!",
+                           "tup_to_sort = " + str(tup_to_sort),
+                           "tup_sorted = " + str(tup_sorted)]);
+end if;   
+
+End_Test;
+
+end test_program;

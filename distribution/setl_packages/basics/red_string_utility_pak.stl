@@ -1,0 +1,912 @@
+package red_string_utility_pak;  
+
+const  
+  lower_case_letters := "abcdefghijklmnopqrstuvwxyz",
+  upper_case_letters := "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  numerical_characters := "0123456789",
+  alphabetics := {cha: cha in lower_case_letters + upper_case_letters},
+  alphanumerics := alphabetics + {cha: cha in numerical_characters};
+
+var	-- global variables used by Spitbol-like string analysis functions
+ saved_string_places := { }, 
+ string_being_analyzed; -- string currently being analyzed
+
+-- native string utilities now available in string_utility_pak
+
+--procedure breakup(the_obj,break_chars); 	-- now native
+--procedure single_out(the_obj,break_chars); 	-- now native
+--procedure segregate(the_obj,break_chars); 	-- now native
+--procedure case_change (x,which); 		-- now native
+--procedure keep_chars(string,chars); 		-- now native
+--procedure suppress_chars(string,chars); 	-- now native
+--procedure ascii_val(the_char); 		-- now native
+
+--  ****** various small utilities ******
+
+procedure hex_string(stg);  -- convert string to hex format
+procedure four_byte_to_int(stg); -- convert 4 raw bytes to 32-bit integer
+procedure int_to_four_byte(int); -- convert 32-bit integer to 4 raw bytes 
+
+procedure detab(stg); -- convert tabs to spaces
+procedure retab(stg); -- convert spaces to tabs
+
+procedure read_as_int(stg); 	-- read string as integer
+procedure read_as_real(stg); 	-- read string as real
+procedure read_as_dol_cents(stg); -- read string as dollars and cents
+procedure conv_to_real(real_q,nplaces);
+ -- convert real to string, keeping indicated number ofplaces
+procedure conv_to_dol_cents(int); -- convert integer to dollars and cents
+
+procedure word_loc(line,wd);	-- find location of word in string
+procedure breakat(stg,pattern_string);
+ 	-- breaks string at all substrings found in pattern_string.
+ 	-- pattern_string is a string used to represent a set of strings to
+ 	-- be found in 'stg'. The first character of pattern_string s used
+ 	-- to delimit its sections, e.g. ",ab,cd" and "-ab-cd" both designate
+ 	-- the set {"ab","cd"} of match strings. The concatenated tuple
+ 	-- of string pairs prior_stg,pattern_substg is returned, e.g.
+ 	--       breakat("xxxabyyyyabzzzzcdwww",",ab,cd")
+ 	-- returns the tuple ["xxx","ab","yyyy","ab","zzzz","cd","www",""]
+
+procedure look(x); 	-- debug utility: prints and returns x
+procedure looky(tag,x);
+	-- debug utility: prints x with tag and returns x
+
+-- ******************************************************************
+-- ** routines providing Spitbol-like string analysis capabilities **
+-- ** - matching is by a backtracking search organized recursively **
+-- ******************************************************************
+
+-- to employ these routines, one forms a pattern 'pat' (which is always
+-- a 1-parameter closure) using them, sets the global 
+-- saved_string_places to the string to be matched, and then calls
+-- pat(starting_char) to begin the match. The ending character of
+-- the match is retrunted, or OM if no match is possible.
+
+
+-- The following routines all return scanning functions, which take
+-- a starting character index in string_being_analyzed as their one
+-- parameter, and return the first index past the following matched
+-- section if the match can be extended, or OM if the match cannot
+-- be extended
+
+-- **** elementary scanning operators working from the left ****
+ 		 
+procedure any_of(s); 	-- match any one character in s
+procedure notany_of(s); -- match any one character not in s
+procedure match_string(set_of_stgs);
+	-- match any string in the set_of_stgs
+procedure find_string(set_of_stgs); 
+	-- scan forward to first occurence of string in set_of_stgs,
+	-- and match whole section to the end of this occurence
+procedure atleast(k,s); -- match at least k repetitions of s
+  
+procedure atmost(k,s); -- match at most k repetitions of s
+	-- fail if there are more
+ 
+procedure span_of(s); 	-- match run of characters in s
+procedure break_of(s); -- match run of characters not in s
+procedure nzspan_of(s);
+	 -- match run of at least one character in s
+procedure nzbreak_of(s); 
+	 -- match run of at least one character not in s
+procedure at(n); 
+	 -- check that we are now at character n
+
+-- **** elementary scanning operators working from the right ****
+    
+procedure r_any_of(s); 	-- match any one character in s
+procedure r_notany_of(s); -- match any one character not in s
+procedure r_match_string(set_of_stgs); 
+	-- match any string in the set_of_stgs
+procedure r_find_string(set_of_stgs); 
+	-- scan backward to last occurence of string in set_of_stgs,
+	-- and match whole section to the start of this occurence
+procedure r_atleast(k,s); -- find at least k repetitions of s
+ 
+procedure r_atmost(k,s);
+
+procedure r_span_of(s);   -- match run of characters in s
+procedure r_break_of(s);  -- match run of characters not in s
+procedure r_nzspan_of(s); 
+	 -- match run of at least one character in s
+procedure r_nzbreak_of(s); 
+	 -- match run of at least one character not in s
+procedure r_at(n); 
+	 -- check that we are now at character n from the right
+
+-- **** operators which combine other matching functions ****
+
+procedure alt(pat_ts);   -- match any one of a set of patterns
+procedure cat(pat_tup);  -- match all of a sequence of patterns
+procedure cat_alt(pat_tup,alt_tup);
+   -- match all the sequence alt([pat_tup(j),alt_tup(j)]
+   -- of patterns
+   
+procedure rept(pat1,pat2);
+   -- match alt([pat2,pat1]) as often as possible
+
+procedure keep_loc(pat,ix); 
+   -- if pat matches at current point, 
+   -- set saved_string_places(ix) to [end_of_match], section matched
+
+procedure r_cat(pat_tup); 
+  -- match all of a sequence of patterns in reverse order
+procedure r_rept(pat1,pat2);
+   -- match alt([pat1,pat2]) as often as possible
+ 
+procedure showmatch(pat);
+	-- same match as pat, but prints  message if it succeeds
+
+end red_string_utility_pak;  
+
+package body red_string_utility_pak;
+	use string_utility_pak;
+
+const   
+  tab_occupies := 4,  
+  conversion_multipliers := [16777216,65536,256,1];
+
+var
+  last_string_found;  
+
+var
+    upper_to_lower := {[upper_case_letters(n),lower_case_letters(n)]: n in [1..26]},
+    lower_to_upper := {[lower_case_letters(n),upper_case_letters(n)]: n in [1..26]};
+
+procedure word_loc(line,wd);  
+
+if wd = "" then return OM; end if;
+
+wd1 := wd(1);   
+
+loc := 1;  
+
+while #line >= #wd loop
+  loc +:= #break(line,wd1);
+  if match(line,wd) /= "" then return loc; end if;
+  match(line,wd1);  
+end loop;
+
+return OM; 
+ 
+end word_loc;
+
+procedure breakup(the_obj,break_chars);  
+
+obj := the_obj; 
+
+if is_string(obj) then  
+
+  tup := [ ];  
+  
+  if  #obj>0  and obj(1)  in break_chars then  
+	 tup := [""];
+  end if; 
+
+ while obj /= "" loop  
+  any(obj,break_chars); 
+  tup with:= break(obj,break_chars); 
+ end loop;
+ 
+ return tup;  
+  
+elseif is_tuple(obj) then 
+
+  return [breakup(x,break_chars): x in obj];
+  
+elseif is_set(obj) then 
+
+  return {piece:x in obj | (piece := breakup(x,break_chars)) /= OM };
+ 		
+else
+
+  return obj; 
+
+end if;
+
+end breakup;
+
+procedure single_out(the_obj,break_chars);  
+
+obj := the_obj; 
+
+if is_string(obj) then  
+
+  tup := [ ];  
+
+  while obj /= "" loop  
+
+    if (sp := any(obj,break_chars)) /= "" then tup with:= sp; end if;
+		  
+    if (sp := break(obj,break_chars)) /= "" then tup with:= sp; end if;
+		  
+  end loop;
+ 
+ return tup;  
+  
+elseif is_tuple(obj) then 
+
+  return [single_out(x,break_chars): x in obj];
+  
+elseif is_set(obj) then 
+
+  return {single_out(x,break_chars): x in obj};
+ 		
+else
+
+  return obj; 
+
+end if;
+
+end single_out;
+
+procedure segregate(the_obj,break_chars);  
+
+obj := the_obj; 
+
+if is_string(obj) then  
+
+  tup := [ ];  
+
+ while obj /= "" loop  
+  tup with:= if (sp := span(obj,break_chars)) = "" then OM else sp end if;
+		  
+  tup with:= if (sp := break(obj,break_chars)) = "" then OM else sp end if;
+		  
+ end loop;
+ 
+ return tup;  
+  
+elseif is_tuple(obj) then 
+
+  return [segregate(x,break_chars): x in obj];
+  
+elseif is_set(obj) then 
+
+  return {segregate(x,break_chars): x in obj};
+ 		
+else
+
+  return obj; 
+
+end if;
+
+end segregate;
+
+procedure keep_chars(string,chars);  
+
+string_copy := string; 
+new := "";  
+
+while string_copy /= "" loop
+
+  new +:= span(string_copy,chars);
+  break(string_copy,chars);
+  
+end loop;
+
+return new;
+
+end keep_chars;
+
+procedure suppress_chars(string,chars); 
+
+string_copy := string; 
+new := "";  
+
+while string_copy /= "" loop
+
+  new +:= break(string_copy,chars);
+  span(string_copy,chars);
+  
+end loop;
+
+return new;
+
+end suppress_chars;
+
+procedure hex_string(stg);  
+
+const
+  sym_str := "0123456789ABCDEF";
+
+return "" +/ [sym_str(ascii_val(the_char)/ 16 + 1) + sym_str(ascii_val(the_char) mod 16 + 1):
+                                                                        the_char in stg];
+
+end hex_string;
+  
+procedure ascii_val(the_char);  
+
+const
+  binstr_0 := "\x00\x00\x00\x02\x00\x00\x00\x00";
+
+aux_binstr := binstr_0;  aux_binstr(#aux_binstr) := the_char; return unbinstr(aux_binstr);
+
+end ascii_val;
+
+procedure case_change (x,which);  
+
+if which = "ul" then
+   return("" +/[upper_to_lower(ch)?ch: ch in x]);  
+                                                              
+  else
+   return("" +/[lower_to_upper(ch)?ch: ch in x]);  
+                                                              
+ end if;
+end case_change;
+
+procedure four_byte_to_int(stg);  
+
+return +/[abs(stg(j)) * conversion_multipliers(j): j in [1..4]];
+
+end four_byte_to_int;
+
+procedure int_to_four_byte(int);  
+
+rem_vect := [ ];  
+div := 256;  
+
+for j in [1..4] loop rem_vect with := (int mod div); int /:= div; end loop;
+
+return +/[char(rem_vect(j)): j in [4,3..1]];
+
+end int_to_four_byte;
+
+procedure retab(stg);  
+
+new_stg := ""; len_new_stg := 0;  
+
+while stg /= "" loop
+
+  new_stg +:= (piece := break(stg," ")); len_new_stg +:= #piece;
+
+  if (blanksec := span(stg," ")) /= "" then
+    new_len := len_new_stg + #blanksec;  
+
+	tabs_in_old_len := len_new_stg / tab_occupies;
+	tabs_in_new_len := new_len / tab_occupies;
+	num_extra_blanks := if tabs_in_new_len > tabs_in_old_len then new_len mod tab_occupies
+	                    else #blanksec end if;
+	new_stg +:= ((tabs_in_new_len - tabs_in_old_len) * "\t"); 
+
+	new_stg +:= (num_extra_blanks * " ");
+	len_new_stg := new_len;
+  end if;
+
+end loop;
+
+return new_stg;
+
+end retab;
+
+procedure detab(stg);  
+
+new_stg := ""; len_new_stg := 0;  
+
+while stg /= "" loop
+  new_stg +:= (piece := break(stg,"\t")); len_new_stg +:= #piece;
+  if (tabsec := span(stg,"\t")) /= "" then
+    lmt := len_new_stg mod tab_occupies;  
+
+    extra_len := ((tab_occupies * #tabsec) - lmt);
+	new_stg +:= (extra_len * " "); len_new_stg +:= extra_len;
+  end if;
+end loop;
+
+return new_stg;
+
+end detab;
+
+procedure read_as_int(stg);  
+
+o_stg := stg;
+sgn := match(stg,"-"); span(stg," ");
+if stg = "" then return 0; end if;  
+
+int_part := span(stg,numerical_characters); 
+
+if stg /= "" then
+  print("ERROR: ****** illegal integer " + o_stg + " omitted ***");
+  return 0;
+end if;
+
+stg := sgn + int_part;
+
+reads(stg,amt_as_int);  
+
+return amt_as_int;
+
+end read_as_int;
+
+procedure read_as_real(stg);  
+
+if stg = "" then return 0.0; end if;  
+
+o_stg := stg;
+
+sgn := match(stg,"-"); span(stg," ");
+stg_less_sgn := "0" + stg + "0";
+int_part := span(stg,numerical_characters); 
+dot := match(stg,"."); frac_part := span(stg,numerical_characters);
+
+if dot = "" or stg /= "" then
+  print("ERROR: ****** illegal real " + o_stg + " omitted ***");
+  return 0.0;
+end if;
+
+stg := sgn + "0" + stg_less_sgn;
+
+reads(stg,amt_as_real);  
+
+return amt_as_real;
+
+end read_as_real;
+
+procedure read_as_dol_cents(stg);  
+
+if stg = "" then return 0; end if;  
+
+o_stg := stg;
+
+match(stg,"$"); dols := span(stg,numerical_characters); 
+dot := match(stg,"."); cents := span(stg,numerical_characters);
+
+if #cents /= 2 or dot = "" or stg /= "" then
+  print("ERROR: ****** illegal cash amount " + o_stg + " omitted ***");
+  return 0;
+end if;
+
+stg := dols + cents;
+reads(stg,amt_as_int);  
+
+return amt_as_int;
+
+end read_as_dol_cents;
+
+procedure conv_to_real(real_q,nplaces);  
+
+stg := str(real_q);
+frac := rbreak(stg,".");
+return stg + len(frac,nplaces);
+
+end conv_to_real;
+
+procedure conv_to_dol_cents(int);  
+
+return if int < 100 then "0" else str(int / 100) end if+ "." +
+       if (imod := int mod 100) < 10 then "0" else "" end if + str(imod);
+	   
+end conv_to_dol_cents;
+
+
+procedure any_of(s);  
+
+return lambda(n); return
+ if n <= #string_being_analyzed and string_being_analyzed(n) in s then n + 1 else OM end if;
+         end lambda;
+
+end any_of;
+
+procedure notany_of(s);  
+
+return lambda(n); return
+if n <= #string_being_analyzed and string_being_analyzed(n) notin s then n + 1 else OM end if;
+       end lambda;
+
+end notany_of;
+
+procedure match_string(set_of_stgs);  
+
+if is_string(set_of_stgs) then set_of_stgs := {set_of_stgs}; end if;
+
+return lambda(n);
+        if n > #string_being_analyzed then return OM; end if;
+        return if exists stg2 in set_of_stgs |
+  string_being_analyzed(n..(n + #stg2 - 1) min #string_being_analyzed) = stg2 then n + #stg2
+        else OM end if;
+       end lambda;
+
+end match_string;
+
+procedure find_string(set_of_stgs);  
+
+if is_string(set_of_stgs) then set_of_stgs := {set_of_stgs}; end if;
+
+start_char_map :=  {[stg(1),stg]: stg in set_of_stgs | is_string(stg) and stg /= ""};
+start_char_stg := +/ domain(start_char_map);
+
+return find_string_in(set_of_stgs,start_char_map,start_char_stg);  
+
+  procedure find_string_in(set_of_stgs,start_char_map,start_char_stg);  
+
+  return lambda(n); 
+          piece := string_being_analyzed(n..); -- piece starting at the current match point
+
+		  while piece /= "" loop
+		  
+		    if exists stg in start_char_map{piece(1)} | match(piece,stg) /= "" then
+		      last_string_found := stg;
+		      return #string_being_analyzed - #piece;
+		    end if;
+		  
+			piece := piece(2..);  -- otherwise advance to the  next character
+		    break(piece,start_char_stg);  -- and then on to the next possible start
+		  
+		  end loop;
+
+		  return OM;  -- if no match was ever found signal failure
+		end lambda;
+  
+  end find_string_in;
+  
+end find_string;
+
+procedure atleast(k,s);
+
+return lambda(n); return 
+    if #(piece := string_being_analyzed(n..(n + k - 1) min #string_being_analyzed)) = k
+	            and (if s = "" then true else k = #span(piece,s) end if) then n + k
+             else OM end if;
+	   end lambda;
+
+end atleast;
+
+procedure atmost(k,s);
+
+return lambda(n); return 
+ if (k2 := #(piece := string_being_analyzed(n..(n + k) min #string_being_analyzed))) = k + 1
+	        and if s = "" then true else (k2 := #span(piece,s)) = k + 1 end if then OM
+             else n + k2 end if;
+	   end lambda;
+
+end atmost;
+
+procedure span_of(s);  
+
+return lambda(n);
+         stg := string_being_analyzed(n min (#string_being_analyzed + 1)..);
+	     return n + #span(stg,s);
+	   end lambda;
+
+end span_of;
+
+procedure break_of(s);  
+
+return lambda(n);
+         stg := string_being_analyzed(n min (#string_being_analyzed + 1)..);
+	     return n + #break(stg,s);
+	   end lambda;
+
+end break_of;
+
+procedure nzspan_of(s);  
+
+return lambda(n);
+         stg := string_being_analyzed(n min (#string_being_analyzed + 1)..);
+         return if (lsp :=  #span(stg,s)) = 0 then OM else  n + lsp end if;
+	   end lambda;
+
+end nzspan_of;
+
+procedure nzbreak_of(s);  
+
+return lambda(n);
+         stg := string_being_analyzed(n min (#string_being_analyzed + 1)..);
+         return if (lsp :=  #break(stg,s)) = 0 then OM else  n + lsp end if;
+	   end lambda;
+
+end nzbreak_of;
+
+procedure at(n);  
+
+return lambda(k); return if k = n then n else OM end if; end lambda;
+
+end at;
+
+procedure r_any_of(s);  
+
+return lambda(n); return if string_being_analyzed(n max 1) in s then n - 1 else OM end if; end lambda;
+
+end r_any_of;
+
+procedure r_notany_of(s);  
+
+return lambda(n); return if string_being_analyzed(n max 1) in s then n - 1 else OM end if; end lambda;
+
+end r_notany_of;
+
+procedure r_match_string(set_of_stgs);  
+
+if is_string(set_of_stgs) then set_of_stgs := {set_of_stgs}; end if;
+
+return lambda(n); 
+        return 
+        if exists stg2 in set_of_stgs |
+  string_being_analyzed((n - #stg2 + 1) max 1..n) = stg2 then n - #stg2
+        else OM end if;
+       end lambda;
+
+end r_match_string;
+
+procedure r_find_string(set_of_stgs);  
+
+if is_string(set_of_stgs) then set_of_stgs := {set_of_stgs}; end if;
+
+end_char_map :=  {[stg(#stg),stg]: stg in set_of_stgs | is_string(stg) and stg /= ""};
+end_char_stg := +/ domain(end_char_map);
+
+return r_find_string_in(set_of_stgs,end_char_map,end_char_stg);  
+
+  procedure r_find_string_in(set_of_stgs,end_char_map,end_char_stg);  
+
+  return lambda(n); 
+          piece := string_being_analyzed(1..n); 
+
+		  while piece /= "" loop
+		  
+		    if exists stg in end_char_map{piece(#piece)} | rmatch(piece,stg) /= "" then
+		      last_string_found := stg;
+		      return #piece + 1;
+		    end if;
+		  
+			piece := piece(1..#piece - 1);  
+		    rbreak(piece,end_char_stg);  
+		  
+		  end loop;
+
+		  return OM;  
+		end lambda;
+  
+  end r_find_string_in;
+
+end r_find_string;
+
+procedure r_atleast(k,s);
+
+return lambda(n); 
+        return 
+    if #(piece := string_being_analyzed((n - k + 1) max 1..n)) = k
+	            and if s = "" then true else k = #rspan(piece,s) end if then n - k
+             else OM end if;
+	   end lambda;
+
+end r_atleast;
+
+procedure r_atmost(k,s);
+
+return lambda(n); 
+        return 
+    if (k2 := #(piece := string_being_analyzed((n - k) max 1..n))) = k + 1
+	        and if s = "" then true else (k2 := #rspan(piece,s)) = k + 1 end if then OM
+             else n - k2 end if;
+	   end lambda;
+
+end r_atmost;
+
+procedure r_span_of(s);  
+
+return lambda(n); stg := string_being_analyzed(1..n);  return n - #rspan(stg,s); end lambda;
+
+end r_span_of;
+
+procedure r_break_of(s);  
+
+return lambda(n); stg := string_being_analyzed(1..n);  return n - #rbreak(stg,s); end lambda;
+
+end r_break_of;
+
+procedure r_nzspan_of(s);  
+
+return lambda(n); stg := string_being_analyzed(1..n);  return n - #rspan(stg,s); end lambda;
+
+end r_nzspan_of;
+
+procedure r_nzbreak_of(s);  
+
+return lambda(n); stg := string_being_analyzed(1..n);  return n - #rbreak(stg,s); end lambda;
+
+end r_nzbreak_of;
+
+procedure r_at(n);  
+
+return lambda(k); return if k = #string_being_matched - n then n else OM end if; end lambda;
+
+end r_at;
+
+procedure alt(pat_ts);  
+
+return lambda(n); 
+       return if exists pat in pat_ts | (res := pat(n)) /= OM then res else OM end if;
+       end lambda;
+	   
+end alt;
+
+procedure cat(pat_tup);  
+
+return lambda(nn);
+         n := nn;  
+         for pat in pat_tup loop
+	       if (n := pat(n)) = OM then return OM; end if;
+         end loop;
+		 return n;
+	   end lambda;
+
+end cat;
+
+procedure cat_alt(pat_tup,alt_tup);
+
+return lambda(nn);
+         n := nn;  
+         for pat = pat_tup(j) loop
+		   prior_n := n;
+	       if (n := pat(n)) = OM then return alt_tup(j)(prior_n); end if;
+         end loop;
+		 return n;
+	   end lambda;
+
+end cat_alt;
+
+procedure rept(pat1,pat2);  
+
+return lambda(n);
+         n2 := n;  
+         while (n1 := pat2(n2)) = OM loop  
+		   								   
+		   if (n2 := pat1(n2)) = OM then return OM; end if;
+		 end loop;
+		 return n1;
+	   end lambda;
+	   
+end rept;
+
+procedure r_cat(pat_tup);  
+
+return lambda(nn);
+         n := nn;  
+         for k in [#pat_tup,#pat_tup - 1..1] loop
+		   pat := pat_tup(k);
+	       if (n := pat(n)) = OM then return OM; end if;
+         end loop;
+		 return n;
+	   end lambda;
+
+end r_cat;
+
+procedure r_rept(pat1,pat2);
+
+return lambda(n);
+         n2 := n;  
+         while (n1 := pat1(n2)) = OM loop  
+		   								   
+		   if (n2 := pat2(n2)) = OM then return OM; end if;
+		 end loop;
+		 return n1;
+	   end lambda;
+	   
+end r_rept;
+
+procedure keep_loc(pat,ix);  
+
+return lambda(n);
+          if (the_res := pat(n)) /= OM then
+            saved_string_places(ix?"GARBAGE") :=  [the_res,last_string_found];
+		  end if;
+		  return the_res;
+	   end lambda;
+
+end keep_loc;
+
+procedure showmatch(pat);  
+
+return lambda(n);
+       k := n;
+	   if (res := pat(n)) /= OM then
+	   nn := (res - 1) min n; mm := (res - 1) max n; 
+	      print([n,res,string_being_analyzed(
+		       (nn max 1) min (#string_being_analyzed + 1)..mm min #string_being_analyzed)]);
+	   end if;
+	   return res;
+	   end lambda;
+
+end showmatch;
+
+procedure breakat(stg,pattern_string);  
+
+if #pattern_string < 2 or stg = "" then return [stg,""]; end if;
+
+pattern_list := breakup(pattern_string(2..),pattern_string(1));
+key_to_pat_list := { };  
+
+for pat in pattern_list | pat /= "" loop
+  key_to_pat_list(pat(1)) := key_to_pat_list(pat(1))?[ ] with pat;
+end loop;
+
+if key_to_pat_list = { } then return [stg,""]; end if; 
+keys := +/ domain(key_to_pat_list);
+
+key_to_pat_list := {[key,put_in_order(pat_list)]: [key,pat_list] in key_to_pat_list};
+
+result := [ ]; 
+piece := "";  
+
+while stg /= "" loop
+
+  piece +:= break(stg,keys);  
+
+  if stg = "" then exit; end if; 
+  
+  if exists pat in key_to_pat_list(stg(1)) | match(stg,pat) /= "" then  
+    result +:= [piece,pat]; piece := "";  
+  else  
+    piece +:= len(stg,1);
+  end if;
+
+end loop;
+
+return if piece = "" then result else result + [piece,""] end if;
+
+end breakat;
+
+procedure put_in_order(list);  
+
+if #list < 2 then return list; end if;
+
+bins := [ ];
+
+for stg in list loop bins(#stg + 1) := bins(#stg + 1)?[ ] with stg; end loop;
+
+return [ ] +/[bin: j in [#bins,#bins - 1..1] | (bin := bins(j))/= OM];
+
+end put_in_order;
+
+procedure look(x); print("look: ",x); return x; end look;
+procedure looky(tag,x); print("looky",str(tag),": ",x); return x; end looky;
+
+end red_string_utility_pak;  
+
+class Jstg;  
+
+procedure create(x);  
+
+end Jstg;
+
+class body Jstg;  
+
+use string_utility_pak,red_string_utility_pak;  
+
+var
+
+  the_stg_or_stgs;  
+
+procedure create(x);  
+
+the_stg_or_stgs := x;  
+
+end create;
+
+procedure x / self;  
+
+return breakup(x,the_stg_or_stgs);
+
+end;
+
+procedure x less self;  
+
+return suppress_chars(x,the_stg_or_stgs);
+
+end;
+
+procedure x mod self;  
+
+return segregate(x,the_stg_or_stgs);
+
+end;
+
+procedure x with self;  
+
+return keep_chars(x,the_stg_or_stgs);
+
+end;
+
+end Jstg;

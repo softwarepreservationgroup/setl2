@@ -1,0 +1,49 @@
+program test_program; 
+ -- more tests of merge_sort and iterative_merge_sort
+use sort_pak, Test_Common;
+
+Begin_Test("testing merge_sort and iterative_merge_sort");
+set_to_sort := {"Jack","Fudge","Jackie","Jacki","Diana","Abe"}
+                + {"jack","jackie","jill","went","up","hill"};
+tup_to_sort := [x : x in set_to_sort];
+
+tup_sorted := merge_sort(set_to_sort);
+  ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+  if not ok then Log_Error(["merge_sort failed!",
+                            "set_to_sort = " + str(set_to_sort),
+                            "tup_sorted = " + str(tup_sorted)]);
+  end if;
+tup_sorted := merge_sort(tup_to_sort);
+  ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+  if not ok then Log_Error(["merge_sort failed!",
+                            "tup_to_sort = " + str(tup_to_sort),
+	                      "tup_sorted = " + str(tup_sorted)]);
+  end if;   
+tup_sorted := iterative_merge_sort(tup_to_sort);
+  ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+  if not ok then Log_Error(["iterative_merge_sort failed!",
+                            "tup_to_sort = " + str(tup_to_sort),
+	                      "tup_sorted = " + str(tup_sorted)]);
+end if;   
+
+set_to_sort:={["jack",2],["jack",1],["jackie",2],["jill",3],["went",4],["up",5],["hill",6]};
+tup_to_sort := [x : x in set_to_sort];
+
+tup_sorted := merge_sort(set_to_sort);
+  ok := forall i in [1..#tup_sorted-1] | tup_sorted(i)(1) < tup_sorted(i+1)(1)
+     or (tup_sorted(i)(1) = tup_sorted(i+1)(1) and tup_sorted(i)(2) <= tup_sorted(i+1)(2));
+  if not ok then Log_Error(["merge_sort failed!",
+                            "set_to_sort = " + str(set_to_sort),
+	                      "tup_sorted = " + str(tup_sorted)]);
+  end if;
+tup_sorted := merge_sort(tup_to_sort);
+  ok := forall i in [1..#tup_sorted-1] | tup_sorted(i)(1) < tup_sorted(i+1)(1)
+     or (tup_sorted(i)(1) = tup_sorted(i+1)(1) and tup_sorted(i)(2) <= tup_sorted(i+1)(2));
+  if not ok then Log_Error(["merge_sort failed!",
+                            "tup_to_sort = " + str(tup_to_sort),
+      	                "tup_sorted = " + str(tup_sorted)]);
+  end if;   
+
+End_Test;
+
+end test_program; 

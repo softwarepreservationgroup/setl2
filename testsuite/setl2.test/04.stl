@@ -1,0 +1,298 @@
+-- ========================================================================
+--
+--  Real Arithmetic Test
+--  ====================
+--
+--  This file is intended to test the floating point operations described
+--  on pages 38-39 of "Programming With Sets: An Introduction to SETL".
+--
+--  For most of these tests, we are really not concerned about accuracy.
+--  We are trusting the C compiler and library to worry about that.  We
+--  are primarily concerned that we call the right C function.
+--
+--  We have moved random from a built-in procedure to a system package.
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Misc_Reals       := {float(x) / float(y) : 
+                           x in {-5 .. 5}, y in {2 .. 10}} +
+                       {1.5e10, -1.5E10, 1.5e-10, -1.5E-10};
+
+   Begin_Test("Real operations test");
+
+   --
+   --  Test addition and subtraction against each other.
+   --
+
+   Left_Test_Set := Right_Test_Set := Misc_Reals;
+
+   for Left in Left_Test_Set, Right in Right_Test_Set loop
+
+      Sum := Left + Right;
+
+      if abs(Left - (Sum - Right)) > 1.0e-3 then
+
+         Log_Error(["Add or subtract failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Sum = "+str(Sum),
+                    "Sum - Right = "+str(Sum - Right)]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test multiplication and division against each other.
+   --
+
+   Left_Test_Set   := Misc_Reals;
+   Right_Test_Set  := Misc_Reals - {0.0};
+
+   for Left in Left_Test_Set, Right in Right_Test_Set loop
+
+      Sum := Left * Right;
+
+      if abs(Left - (Sum / Right)) > 1.0e-3 then
+
+         Log_Error(["Multiply or divide failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Sum = "+str(Sum),
+                    "Sum / Right = "+str(Sum / Right)]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test exponentiation, log and exp against each other.
+   --
+
+   Left_Test_Set := Right_Test_Set :=
+      {x in Misc_Reals | x > 0.0 and x < 1.0e10};
+
+   for Left in Left_Test_Set, Right in Right_Test_Set loop
+
+      Power := Left ** Right;
+
+      if abs(exp(log(Left) * Right) - Power) > 1.0e-2 then
+
+         Log_Error(["Exponentiation, EXP or LOG failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Power = "+str(Power),
+                    "Result = "+str(exp(log(Left) * Right))]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test atan2 and atan against each other.
+   --
+
+   Left_Test_Set   := Misc_Reals;
+   Right_Test_Set  := Misc_Reals - {0.0};
+
+   for Left in Left_Test_Set, Right in Right_Test_Set loop
+
+      if abs(atan2(Left,Right) - atan(Left / Right)) > 1.0e-3 then
+
+         Log_Error(["Atan2 or atan failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Atan2 ="+str(atan2(Left,Right))]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test absolute value and unary minus against each other.
+   --
+
+   Test_Set := Misc_Reals;
+
+   for Test in Test_Set loop
+
+      if (Test < 0.0 and abs(Test) /= -Test) or
+         (Test >= 0.0 and abs(Test) /= Test) then
+
+         Log_Error(["ABS or unary minus failed!",
+                    "Test = "+str(Test),
+                    "-Test = "+str(-Test),
+                    "ABS(Test) = "+str(abs(Test))]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test fix, floor, and ceil.
+   --
+
+   Test_Set := {[      123456.0,      123456,      123456,      123456],
+                [    444.000001,         444,         444,         445],
+                [   -444.000001,        -444,        -445,        -444],
+                [           0.0,           0,           0,           0],
+                [      0.000001,           0,           0,           1],
+                [     -0.000001,           0,          -1,           0]};
+                
+   for [r,fi,fl,c] in Test_Set loop
+
+      if fix(r) /= fi then
+
+         Log_Error(["Fix failed!",
+                    "r = "+str(r),
+                    "fix(r) = "+str(fix(r))]);
+
+      end if;
+
+      if floor(r) /= fl then
+
+         Log_Error(["Floor failed!",
+                    "r = "+str(r),
+                    "floor(r) = "+str(floor(r))]);
+
+      end if;
+
+      if ceil(r) /= c then
+
+         Log_Error(["Ceil failed!",
+                    "r = "+str(r),
+                    "ceil(r) = "+str(ceil(r))]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test log and exp against each other.
+   --
+
+   Test_Set  := {x in Misc_Reals | x > 0.0 and x < 1.0e10};
+
+   for Test in Test_Set loop
+
+      if abs(log(exp(Test)) - Test) > 1.0e-2 then
+
+         Log_Error(["EXP or LOG failed!",
+                    "Test = "+str(Test),
+                    "EXP(Test) = "+str(exp(Test)),
+                    "LOG(EXP(Test)) = "+str(log(exp(Test)))]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test trig functions.
+   --
+
+   Test_Set := {x in Misc_Reals | abs(x) < 1.0e2};
+
+   for Test in Test_Set loop
+
+      if abs(1.0 - sin(Test) ** 2.0 - cos(Test) ** 2.0) > 1.0e-3 then
+
+         Log_Error(["Sin or cos failed!",
+                    "Test = "+str(Test),
+                    "sin(Test) = "+str(sin(Test)),
+                    "cos(Test) = "+str(cos(Test))]);
+
+      end if;
+
+      if abs(tan(Test) - sin(Test) / cos(Test)) > 1.0e-3 then
+
+         Log_Error(["Tan, Sin or cos failed!",
+                    "Test = "+str(Test),
+                    "sin(Test) = "+str(sin(Test)),
+                    "cos(Test) = "+str(cos(Test)),
+                    "tan(Test) = "+str(tan(Test))]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test arc trig functions.
+   --
+
+   Test_Set := {x in Misc_Reals | x >= 0.0 and x < 1.55};
+
+   for Test in Test_Set loop
+
+      if abs(Test - acos(cos(Test))) > 1.0e-3 then
+
+         Log_Error(["Cos or acos failed!",
+                    "Test = "+str(Test),
+                    "cos(Test) = "+str(cos(Test)),
+                    "acos(cos(Test)) = "+str(acos(cos(Test)))]);
+
+      end if;
+
+      if abs(Test - asin(sin(Test))) > 1.0e-3 then
+
+         Log_Error(["Sin or asin failed!",
+                    "Test = "+str(Test),
+                    "sin(Test) = "+str(sin(Test)),
+                    "asin(sin(Test)) = "+str(asin(sin(Test)))]);
+
+      end if;
+
+      if abs(Test - atan(tan(Test))) > 1.0e-3 then
+
+         Log_Error(["Tan or atan failed!",
+                    "Test = "+str(Test),
+                    "tan(Test) = "+str(tan(Test)),
+                    "atan(tan(Test)) = "+str(atan(tan(Test)))]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test sqrt.
+   --
+
+   Test_Set := {x in Misc_Reals | x >= 0.0};
+
+   for Test in Test_Set loop
+
+      if abs(Test - sqrt(Test ** 2.0)) > 1.0e-3 then
+
+         Log_Error(["Sqrt failed!",
+                    "Test = "+str(Test),
+                    "sqrt(Test ** 2) = "+str(sqrt(Test ** 2.0))]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test sign.
+   --
+
+   Test_Set := Misc_Reals;
+
+   for Test in Test_Set loop
+
+      if (Test < 0.0 and sign(Test) /= -1) or
+         (Test > 0.0 and sign(Test) /= 1) or
+         (Test = 0.0 and sign(Test) /= 0) then
+
+         Log_Error(["Sign failed!",
+                    "Test = "+str(Test),
+                    "sign(Test) = "+str(sign(Test))]);
+
+      end if;
+
+   end loop;
+ 
+   End_Test;
+
+end test_program;

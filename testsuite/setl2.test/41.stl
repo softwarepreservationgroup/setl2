@@ -1,0 +1,25 @@
+program test_program;
+
+   use test_common, object_test_pack, class_m, class_n, class_s, class_u;
+
+   begin_test("Test visibility");
+
+   m := class_m();
+   u := class_u(1,2,3);
+
+   m.public := "YES";
+   if m.public /= "YES" then
+
+      log_error(["Wrong PUBLIC",
+                 "m.public = "+str(m.public)]);
+
+   end if;
+
+   u.public := "NO";
+
+   log_error(["Wrong PUBLIC",
+              "u.public = "+str(u.public)]);
+
+   end_test;
+
+end test_program;

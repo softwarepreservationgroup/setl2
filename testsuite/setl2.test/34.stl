@@ -1,0 +1,167 @@
+-- ==================================================================
+--
+--  This program is a translation of the Huffman coding test program
+--  written by J. Schwartz.
+--
+
+program test_program;
+
+--      module test - huffman_coding;
+ 
+          -- nyu program identification
+          -- huffman encode and decode
+          -- author - j. schwartz (nyu-cims)
+          -- entered as file huff in tstbag/un=jts
+          -- conversion of setla program  deck huff on t880 stestpl
+          -- passed xsetl 14-feb-79
+          -- forward for inclusion in standard tests  14-feb-79
+ 
+--          export
+--              huffman_coding_test;
+ 
+--          read
+--              print_mode;
+
+   use Test_Common; 
+
+   const
+      csq  := "etaionshrdlubcfgjkmpqvwxyz .,",
+      fseq := [ 10,  8,  7,  6,  5,  4,  4,  4,  4,  4,
+                 3,  3,  3,  3,  3,  2,  2,  2,  2,  2,
+                 1,  1,  1,  1,  1,  1, 10,  1,  1 ];
+ 
+   var
+      cseq,
+      code,
+      seq,
+      l,
+      r,
+      wfreq,
+      work;
+
+   Begin_Test("Huffman coding test");
+
+   huffman_coding_test;  --end main 
+ 
+   End_Test;
+
+procedure huffman_coding_test;
+ 
+   print("huffman coding test");
+ 
+   cseq := [csq(n): n in [ 1..# csq ]];
+   chs := {};  -- character set
+ 
+   frq := {};  -- frequency mapping
+   for n in [ 1..# cseq] loop
+       chs with:= cseq(n);
+       frq(cseq(n)) := fseq(n);
+   end loop;
+ 
+   huftabs := huftabl(chs, frq);
+   [code, l, r, tp] := huftabs;
+ 
+   strng := "if you can read this, the huffman test has passed.";
+ 
+   coded := +/[code(strng(n)): n in [1..# strng]];
+   print( (decode := codsq(huftabs, coded)) );
+ 
+   if decode /= strng then
+      Log_Error("huffman coding test failed");
+   end if; 
+
+   print("huffman coding test");
+ 
+end huffman_coding_test;
+ 
+procedure getmin (s);
+ 
+   keep  := arb s;
+   least := wfreq(keep);
+ 
+   for x in s loop
+      if wfreq(x) < least then
+          keep  := x;
+          least := wfreq(x);
+      end if;
+   end loop;
+ 
+   work less:= keep;
+ 
+   return keep;
+ 
+end getmin;
+ 
+-- routine to produce huffman tree and code table.
+
+procedure  huftabl  (chars, freq);
+   work := chars;
+   wfreq := freq;
+   l := {};
+   r := {};
+ 
+   while (# work)  >  1 loop
+      c1 := getmin(work);
+      c2 := getmin(work);
+      n := newat();
+      l(n) := c1;
+      r(n) := c2;
+      wfreq(n) := wfreq(c1)+wfreq(c2);
+      work with:= n;
+   end loop;
+ 
+   code  :=  {};
+   seq  :=  "";
+ 
+   tp := arb work;
+   walk(tp);
+   return [code, l, r, tp];
+ 
+end huftabl;
+ 
+procedure walk(tp);         -- recursive tree-walker
+                              -- builds-up address of each twig
+ 
+   if l(tp) /= om then
+       seq := seq + "0";
+       walk(l(tp));
+       seq := seq + "1";
+       walk(r(tp));
+   else   -- at twig
+       code(tp) := seq;
+   end if;
+ 
+   if(# seq) > 1 then
+      seq := seq(1..# seq-1);
+   else
+      seq := "";
+   end if;
+ 
+end walk;
+ 
+procedure codsq(huftabs, sq);   -- huffman decoding routine
+ 
+   [jk, l, r, tp] := huftabs;
+ 
+   outpu := "";
+   node := tp;
+   n := 1;
+ 
+   while n <= # sq loop
+      if l(node) = om then   -- so that we are at twig
+         outpu := outpu + node;
+         node := tp;
+         n := n-1;
+      else
+         node := if sq(n) = "0" then l(node) else r(node) end if;
+      end if;
+      n := n+1;
+   end loop;
+ 
+   return outpu + node;
+ 
+end codsq;
+ 
+--      end module test - huffman_coding;
+
+end test_program; 

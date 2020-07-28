@@ -1,0 +1,87 @@
+AC_INIT(src/system.h)
+AM_CONFIG_HEADER(src/config.h)
+AM_INIT_AUTOMAKE(setl2,3.0.100206)
+
+AC_PROG_CC
+AC_C_BIGENDIAN
+
+AC_LIBTOOL_DLOPEN
+AC_LIBTOOL_WIN32_DLL
+AM_PROG_LIBTOOL
+#AM_WITH_MPATROL
+
+
+HOST_PLATFORM="$host"
+
+AC_CHECK_LIB(sunmath, quiet_nan, , , -lm)
+AC_CHECK_LIB(z, compress, , ,-lz)
+AC_CHECK_LIB(tk, Tk_Init, , ,-ltk)
+AC_CHECK_LIB(tcl, Tcl_Init, , ,-ltcl)
+AC_CHECK_LIB(png, png_init_io, , ,-lpng)
+AC_CHECK_LIB(tiff, _TIFFfree, , ,-ltiff)
+AC_CHECK_LIB(jpeg, jpeg_mem_init, , ,-ljpeg)
+AC_CHECK_LIB(ploticus, ploticus_begin, , ,-lploticus)
+#
+# Get Tcl stuff
+#
+
+# this generates the "--with-tk" command line parameter
+AC_ARG_WITH(tk, [  --with-tk=DIR          specify location of tk base dir],
+        TKDIR=$withval, TKDIR=notcl)
+
+# look for it in some common places
+# (this is just shell script, which is passed through directly to configure)
+if test "$TKDDIR" = "notcl"; then
+
+    tcldirs='/usr/local /usr'
+    for d in $tcldirs; do
+        if test -f "$d/lib/tclConfig.sh"; then
+            TKDDIR="$d"
+        fi
+    done
+fi
+
+
+AC_CHECK_HEADERS(signal.h sys/signal.h, break)
+AC_CHECK_HEADERS(sys/socket.h,)
+
+case "$host" in
+  *-*-linux*)
+    AC_CHECK_LIB(m, sin, , , -lc)
+  ;;
+  *)
+    AC_CHECK_LIB(m, sin)
+  ;;
+esac
+
+case "$host" in
+  m68k-hp-hpux*)
+  ;;
+  *-*-sco*)
+    AC_MSG_RESULT([defining SCO to be 1])
+    AC_DEFINE(SCO, 1,"Define if you are using SCO UNIX")
+    AC_MSG_RESULT([forcing HAVE_ISINF for SCO])
+    AC_DEFINE(HAVE_ISINF, 1)
+    AC_MSG_RESULT([forcing HAVE_ISNAN for SCO])
+    AC_DEFINE(HAVE_ISNAN, 1)
+  ;;
+  *)
+    AC_CHECK_FUNCS(finite isnan isinf infinity quiet_nan)
+  ;;
+esac
+
+AH_TEMPLATE([TSAFE],[Set to 1 is compiling the thread safe version.])
+
+AC_ARG_ENABLE(tsafe,AC_HELP_STRING([--enable-tsafe],[thread safe version (default=yes)]),tsafe=$enableval,tsafe="yes")
+
+if test "X$tsafe" = Xyes;  then
+AC_DEFINE(TSAFE,1)
+fi
+
+AC_SUBST(HOST_PLATFORM)
+AC_SUBST(TKDIR)
+
+
+AC_OUTPUT(Makefile src/Makefile stll/Makefile stlc/Makefile stlx/Makefile testsuite/Makefile packages/Makefile packages/String_utility_pak/Makefile packages/Stringm_pak/Makefile packages/Zip_pak/Makefile packages/Parser_pak/Makefile)
+
+

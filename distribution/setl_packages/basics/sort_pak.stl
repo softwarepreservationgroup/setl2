@@ -1,0 +1,1030 @@
+package sort_pak;
+
+procedure merge_sort(lst);  -- can be a set, or tuple; elements can themselves be elementary or tuples
+
+procedure file_sort(source,dest);		-- sort source line-file  into dest file
+procedure file_merge(source1,source2,dest);		-- sort pair of source line-files into dest line-file
+
+procedure flat_sort(source,field_len);		-- sort source flat
+procedure flat_merge(source1,source1_fill,source2,source2_fill,rw dest);		-- sort pair of source flats into dest flat
+
+procedure iterative_merge_sort(tup_to_sort);  -- iterative mergesort
+procedure bin_sort(tup,num_of_bins);  -- 'pocket' or 'bin' sort
+procedure ford_johnson(set_to_sort);  -- the Ford-Johnson comparison-efficient sort
+procedure linsort(tup);
+-- 'optimistic' sort, which works well if there are only a limited number of up-and down runs.
+-- find a first run; then find the next, and merge with the first; continue this as long as tup 
+-- is not exhausted.
+procedure quicksort(values);  -- from the Doberkat collection
+procedure shellsort (values);  -- from the Doberkat collection
+procedure kth(tup,k);  -- linear-time median finder
+procedure unix_sort(source_name,dest_name,param_stg);		-- sort file to file by unix method
+
+end sort_pak;
+
+package body sort_pak;
+	use string_utility_pak;
+
+	var field_length;						-- globals for flat_sort and flat_merge
+	var read_point_1,read_point_2;			-- read points in file 1 and file 2
+	var write_point_3,write_point_4;		-- write points in file 3 and file 4
+	var num_filled_1,num_filled_2;			-- logical length of 2 input flats
+
+procedure bin_sort(tup,num_of_bins);  -- 'pocket' or 'bin' sort
+
+divisor := 1;
+bins := [[ ],tup];  -- just to get started
+
+until #bins(1) = #tup loop
+
+  tup := +/bins;  -- put back in on pile
+  bins := num_of_bins * [[ ]];
+  
+  for item in tup loop  -- distribute into bins
+    key := ((item/divisor) mod num_of_bins) + 1;
+	bins(key) with:= item;  -- place in appropriate bin
+  end loop;
+
+  divisor *:= num_of_bins;
+  
+end loop;
+
+return tup;
+
+end bin_sort;
+
+procedure iterative_merge_sort(tup_to_sort);  -- iterative mergesort
+
+if #tup_to_sort < 2 then  -- if there are less than 2 elements then return
+  return tup_to_sort;
+elseif (if is_tuple(elt1 := tup_to_sort(1)) then elt1(1) else elt1 end if) > 
+			(if is_tuple(elt2 := tup_to_sort(2)) then elt2(1) else elt2 end if) then -- interchange
+  [tup_to_sort(1),tup_to_sort(2)] := [tup_to_sort(2),tup_to_sort(1)];
+end if;
+
+if #tup_to_sort = 2 then  -- if there are less than 3 elements then return
+  return tup_to_sort;
+end if; 
+
+index_tup := [2];  -- note the first zone
+end_of_sorted := 2;  -- note the end of the sorted zone
+
+while (nixt := #index_tup) > 1 or end_of_sorted /= #tup_to_sort loop
+
+  if end_of_sorted = #tup_to_sort or (nixt > 1 and index_tup(nixt) = index_tup(nixt-1)) then
+  					-- merge; first set up the boundaries and the take pointers for the zones to be merged
+	
+    take_ptr_2 := end_of_sorted - index_tup(nixt) + 1;
+    take_ptr_1 := (restore_ptr := take_ptr_2 - index_tup(nixt-1));
+
+	index_tup(nixt-1..nixt) := [index_tup(nixt) + index_tup(nixt-1)];  -- indicate that the 2 blocks are combined
+
+    last_take_1 := take_ptr_2 - 1;
+    last_take_2 := end_of_sorted;
+
+	aux_merge_tup := [];  -- auxilary tuple for merges
+ 
+    while take_ptr_1 <= last_take_1 and take_ptr_2 <= last_take_2 loop  -- now the actual merge
+
+	  if (if is_tuple(elt1 := tup_to_sort(take_ptr_1)) then elt1(1) else elt1 end if)
+	       <= (if is_tuple(elt2 := tup_to_sort(take_ptr_2)) then elt2(1) else elt2 end if) then
+
+  		aux_merge_tup with:= (new_item := tup_to_sort(take_ptr_1)); 
+  		take_ptr_1  +:= 1;
+	  else
+  		aux_merge_tup with:= (new_item := tup_to_sort(take_ptr_2)); 
+	    take_ptr_2  +:= 1;	  
+	  end if;
+
+	end loop;
+	
+	-- and now handle any leftover piece
+	
+	if take_ptr_1 <= last_take_1 then -- move this piece
+	
+	  for ix in [take_ptr_1..last_take_1] loop
+	    aux_merge_tup with:= (new_item := tup_to_sort(ix)); 
+	  end loop;
+	  
+	elseif take_ptr_2 <= last_take_2 then  -- move this piece
+	
+	  for ix in [take_ptr_2..last_take_2] loop
+	    aux_merge_tup with:= (new_item := tup_to_sort(ix)); 
+	  end loop;
+	
+	end if;
+
+	
+	-- and now move the merged section back
+	
+	for item = aux_merge_tup(j) loop
+	   tup_to_sort(restore_ptr) := item;
+	   restore_ptr +:= 1;
+    end loop;
+
+
+  elseif #tup_to_sort > end_of_sorted+1 then -- put a sorted block of two on the sorted zone
+
+    if (if is_tuple(elt1 := tup_to_sort(end_of_sorted+1)) then elt1(1) else elt1 end if) > 
+			(if is_tuple(elt2 := tup_to_sort(end_of_sorted+2)) then elt2(1) else elt2 end if) then -- interchange
+	  [tup_to_sort(end_of_sorted+1),tup_to_sort(end_of_sorted+2)] := [tup_to_sort(end_of_sorted+2),tup_to_sort(end_of_sorted+1)];
+ 	end if;
+
+	index_tup with:= 2;
+    end_of_sorted +:= 2;
+
+  else  -- put a block of one on the sorted zone
+	index_tup with:= 1;
+    end_of_sorted +:= 1;
+ end if;
+  
+end loop;
+
+return tup_to_sort;
+
+end iterative_merge_sort;
+
+procedure merge_sort(lst);  --merge_by_halves sort
+
+if type(lst) = "SET" then lst := [x: x in lst]; end if;
+return if #lst < 2 then lst else 
+        merge(merge_sort(lst(1..#lst/2)),merge_sort(lst(#lst/2+1..))) end if;
+
+end merge_sort; 
+
+procedure merge(lst1,lst2);
+
+newl := [ ];
+n1 :=1;
+n2 :=1;
+
+len1 := #lst1;
+len2 := #lst2;
+
+if type(lst1(1)) = "TUPLE" then
+  while n1 <= len1 and n2 <= len2 loop
+
+    if lst1(n1)(1) <= lst2(n2)(1) then
+	    newl with:= lst1(n1);
+		n1 +:= 1;
+    else
+	    newl with:= lst2(n2);
+		n2 +:= 1;
+    end if;
+
+  end loop;
+
+else
+  while n1 <= len1 and n2 <= len2 loop
+
+    if lst1(n1) < lst2(n2) then
+	    newl with:= lst1(n1);
+		n1 +:= 1;
+    else
+	    newl with:= lst2(n2);
+		n2 +:= 1;
+    end if;
+
+  end loop;
+
+end if;
+
+if n1 <= len1 then newl +:= lst1(n1..); else newl +:= lst2(n2..); end if;
+
+return newl;
+
+end merge;
+
+procedure kth(tup,k);  -- linear-time median finder
+
+if #tup < 11 then return merge_sort(tup)(k); end if;  -- handle small tuples by sorting
+
+tupsecs := [merge_sort(tup(n..n+4)): n in [1,6..#tup-4]];  -- otherwise arrange in sorted groups of 5
+middling_elt := kth([tupsec(3): tupsec in tupsecs], #tupsecs/2);  -- find elements not too near ends
+littles := [x: x in tup | x < middling_elt];  -- take the elements below middling,
+sames := [x: x in tup | x = middling_elt];   -- treating those equal to the middling cautiously
+littles +:= sames(1..#sames/2);
+
+return (if k <= #littles then kth(littles,k) else
+		kth([x: x in tup | x > middling_elt] + sames((#sames/2) + 1..),k - #littles) end if);
+
+end kth;
+
+procedure ford_johnson(set_to_sort);  -- the Ford-Johnson comparison-efficient sort
+
+if #set_to_sort = 2 then  -- one comparison
+
+  x from set_to_sort; y from set_to_sort;
+  
+  if x > y then [x,y] := [y,x]; end if;
+  
+  return [x,y];
+  
+elseif #set_to_sort = 1 then
+
+  return [arb(set_to_sort)];
+  
+end if;
+
+-- otherwise we must proceed recursively
+
+half := { };  -- half the elements
+associated_elt := { };  -- map associating smaller with larger in pairs
+extra := OM;  -- will be non-OM if #set_to_sort is odd
+
+while set_to_sort /= { } loop  -- divide into pairs, with larger first
+
+  x from set_to_sort; y from set_to_sort;
+  
+  if y /= OM then -- set up pair
+    if x < y then [x,y] := [y,x]; end if;
+	associated_elt(x) := y;  -- establish association
+	half with:= x;  -- and put big elt in half to be sorted
+  else
+    extra := x;
+  end if;
+  
+end loop;
+
+tup := ford_johnson(half);  -- sort the chosen half
+sorted := [associated_elt(tup(1))] + tup;  -- this section is now sorted
+
+--print("half: ",half," tup: ",tup," sorted: ",sorted," associated_elt: ",associated_elt," extra: ",extra); 
+
+-- next we work thru the associates of the remaining elements of tup, putting them into place using
+-- a binary search. Our concern is to use efficient binary searches as extensively as possible.
+-- Thus we first place all elements that can be place with just 2 comparisons, then 3 comparisons,
+-- etc, working backward thru these ranges, so that the destination of each element placed is
+-- 'sufficiently uncertain' for every comparison applied to give us one whole bit of new
+-- information. 
+
+power_of_2 := 4;  -- initialize 
+associates_total := 1; -- number of associates already placed
+tup := tup(2..);  -- tup(1) handled already
+
+while tup /= [ ] loop  -- this will be chewed up
+
+  next_piece := tup(1..last_ix := ((power_of_2 - 2 * associates_total) min #tup) max 1);
+  tup := tup(last_ix + 1 ..);
+
+  if extra /= OM and #tup < (power_of_2 -  2 * associates_total) then  -- chance to handle the extra element
+	sorted := put_in_place(sorted,power_of_2,extra);
+	extra := OM;  -- note that it has been handled
+    associates_total +:= 1;  -- note that one more 'associated_elt' has been placed
+  end if;
+  
+  
+  while (item frome next_piece) /= OM loop
+
+    sorted := put_in_place(sorted,power_of_2,associated_elt(item));
+												  -- put associated_elt in place by binary search
+
+    associates_total +:= 1;  -- note that one more associated_elt has been placed
+	
+  end loop;
+  
+  power_of_2 *:= 2;  -- advance to the next power of 2
+  
+end loop;
+
+if extra /= OM then -- insert this last element
+  sorted := put_in_place(sorted,OM,extra);
+end if;
+
+return sorted;  -- return the sorted array
+
+procedure put_in_place(sorted,power_of_2,elt);  -- modified binary search; no equal elements
+			-- searches up to power_of_2 - 1 unless OM, in which case the whole sorted array is searched
+bottom := 1;
+--top := (if power_of_2/= OM then power_of_2 min #sorted else #sorted end if);
+top := #sorted;  -- omit optimisation which seems to be giving trouble
+
+while top > bottom loop
+  middle := (top + bottom)/2;
+  if elt < sorted(middle) then
+    top := (middle -1) max bottom;
+  else
+    bottom := (middle +1) min top;
+  end if;
+end loop;
+
+if elt < sorted(top) then  -- place before the top (which is now the common value of top and bottom)
+  res := (if top = 1 then [elt] + sorted else sorted(1..top-1) + [elt] + sorted(top..) end if);
+else -- place after the top
+  res := (if top = #sorted then sorted + [elt] else sorted(1..top) + [elt] + sorted(top + 1..) end if);
+end if;
+
+--print("put_in_place - sorted: ",sorted); print("res: ",res," elt: ",elt," top: ",top," bottom: ",bottom," power_of_2: ",power_of_2);
+
+return res;
+
+end put_in_place;
+
+end ford_johnson;
+
+procedure linsort(tup);
+-- 'optimistic' sort, which works well if there are only a limited number of up-and down runs.
+-- find a first run; then find the next, and merge with the first; continue this as long as tup 
+-- is not exhausted.
+
+n := 1;
+sorted := [ ];  -- prepare to build sorted tuple
+num_runs := 0;
+
+until return_sig = 0 loop  -- until signal that finished
+
+  [run,return_sig] := build_a_run(tup,n);
+  num_runs +:= 1;
+
+  if return_sig = -1 then  -- decreasing run was returned
+    run := [run(#run + 1 - n): n in [1..#run]];
+  end if;
+
+  sorted := (if sorted = [ ] then run else merge(sorted,run) end if);
+
+end loop;
+
+return sorted;
+
+procedure merge(tup_a,tup_b);  -- merge two sorted tuples
+
+take_ptr_a := 1;
+take_ptr_b := 1;
+merged_tup := [ ];
+
+while (take_ptr_a <= #tup_a) and (take_ptr_b <= #tup_b) loop
+
+  if bigger(tup_a(take_ptr_a),tup_b(take_ptr_b)) then
+     merged_tup with:= tup_b(take_ptr_b);
+	 take_ptr_b +:= 1;
+  else
+     merged_tup with:= tup_a(take_ptr_a);
+	 take_ptr_a +:= 1;
+  end if;
+  
+end loop;
+
+-- and now handle the remaining elements
+
+if take_ptr_a <= #tup_a then
+  merged_tup  +:= tup_a(take_ptr_a..);
+elseif take_ptr_b <= #tup_b then
+  merged_tup  +:= tup_b(take_ptr_b..);
+end if;
+
+return merged_tup;
+
+end merge;
+
+end linsort;
+
+procedure build_a_run(tup,rw start_loc);
+   -- build a run starting at given location; return run and end signal
+
+start_l := start_loc;
+
+if #tup <= start_l then return [tup(start_l..),0]; end if;
+						-- zero or 1 element returned; finished signal
+
+run := [tup(start_l)]; -- prepare to build a run
+
+start_l +:= 1;
+
+if bigger(tup(start_l - 1),tup(start_l)) then 
+				-- find a decreasing run; 
+ 
+  while start_l <= #tup and bigger(tup(start_l - 1),tup(start_l)) loop 
+    run with:= tup(start_l);
+	start_l +:= 1;
+  end loop;
+
+  start_loc:= start_l;
+  return [run,-1];  -- decreasing return
+
+else -- find an increasing run
+
+  while start_l <= #tup and bigger(tup(start_l),tup(start_l - 1)) loop 
+    run with:= tup(start_l);
+	start_l +:= 1;
+  end loop;
+
+  start_loc:= start_l;
+  return [run,1];  -- increasing return
+
+end if;
+
+start_loc:= start_l;
+
+return [run,false];
+
+end build_a_run;
+
+procedure bigger(a,b); -- comparison function
+
+if is_tuple(a) then 
+  return (if a(1) >= b(1) then true else false end if); 
+else 
+  return (if a >= b then true else false end if);
+end if;
+
+end bigger;
+
+procedure quicksort(values);  -- from the Doberkat collection
+
+-- This is a fast sorting algorithm taking time O(n*log n) where n is
+-- the number of values. The values are sorted recursively by picking one
+-- element of the tuple as a "pivot" and sorting the elements that are
+-- smaller and those that are greater than the pivot by QUICKSORT again.
+
+     check_if_tuple(values);
+
+     IF values = [] then
+         RETURN [];     -- an empty tuple is sorted
+     ELSE
+         pivot := values(1);    -- pick any element
+
+         RETURN  quicksort( [x IN values | x < pivot] ) +
+                             [x IN values | x = pivot]   +
+                 quicksort( [x IN values | x > pivot] ) ;
+     END IF;
+
+end quicksort;
+
+procedure swap(rw ind1,rw ind2);
+
+[values(ind1), values(ind2)] := [values(ind2), values(ind1)];
+
+end swap;
+
+procedure shellsort (values);  -- from the Doberkat collection
+
+-- A tuple or set of values is sorted in increasing order.
+-- An auxiliary sequence of increments is used to control the sorting
+-- process, the sequence begins with n/2 and ends with 1. Two values at
+-- the distance of the increment are swapped if they are out of order.
+
+     check_if_tuple (values);
+
+     incr := #values / 2;
+
+     WHILE incr > 0 loop
+         FOR i IN [incr+1 .. #values] loop
+             j := i - incr;      -- two values at the distance INCR are
+                                 -- compared ...
+             WHILE j > 0 loop
+                 IF values (j) > values (j_plus := j+incr) then-- ... and swapped if they are out of order
+                     [values(j), values(j_plus)] := [values(j_plus), values(j)];
+                     j -:= incr;          -- get next two values at the
+                                          -- distance INCR
+                 ELSE
+                     j := 0;    -- quit inner loop if the values are in
+                 END IF;        -- the correct order
+
+             END LOOP;
+         END LOOP;
+
+         incr /:= 2;    -- next INCR
+
+     END LOOP;
+
+     RETURN values;
+
+END shellsort;
+
+procedure check_if_tuple(rw values);
+
+-- This procedure checks whether the parameter of a procedure is a set or a
+-- tuple. A set is changed into a tuple.
+
+    IF IS_SET(values) then  -- change to tuple
+        values := [x : x IN values];   -- make it a tuple
+    ELSE
+        ASSERT IS_TUPLE(values);   -- only set or tuple allowed
+    END IF;
+
+end check_if_tuple;
+
+procedure file_sort(source,dest);		-- sort source file  into dest file
+   file_merge(source,OM,dest);	
+end file_sort;
+
+procedure file_merge(source1,source2,dest);		-- sort pair of source files into dest file
+
+   f1 := of1 := source1 + ".1"; f2 := of2 := source1 + ".2";	
+   f3 := dest; f4 := of4 := source1 + ".3";						-- we will use three auxiliary files altogether
+   erase(f4); files_merge(source1,source2?f4,f1,f2);
+   
+   while (num_runs := files_merge(f1,f2,f3,f4)) > 1 loop 
+	   [f1,f2,f3,f4] := [f3,f4,f1,f2]; 
+   end loop;
+   
+   if f3 /= dest then copy(f3,dest); end if;			-- result is in the correct file
+   erase(of1); erase(of2); erase(of4);
+		   
+end file_merge;
+
+procedure files_merge(f1,f2,f3,f4);		
+	   -- merge ascending runs from the first two files into the last two files; return the number of runs.
+   f1_handle := open(f1,"TEXT-IN"); f2_handle := open(f2,"TEXT-IN");					-- open two files for reading
+   f3_handle := open(f3,"TEXT-OUT"); f4_handle := open(f4,"TEXT-OUT");		-- open two files for writing
+
+   num_runs  := 1;
+   [prior_f1,prior_f2] := [];		-- initially no prior lines have been read
+   
+   while (pair := more_runs(f1_handle,prior_f1,f2_handle,prior_f2,f3_handle)) /= [] loop
+
+	   num_runs +:= 1;					-- count up one more run
+	   [prior_f1,prior_f2] := pair;	-- unpack lines read previously
+				   
+				   -- merge next  pair of runs  into the alternate output file
+	   if (pair := more_runs(f1_handle,prior_f1,f2_handle,prior_f2,f4_handle)) = [] then 
+		   close(f1_handle); close(f2_handle); close(f3_handle); close(f4_handle);	-- release all the files		
+		   return num_runs; 
+	   end if;
+
+	   num_runs +:= 1;					-- count up one more run
+	   [prior_f1,prior_f2] := pair;	-- unpack lines read previously
+
+   end loop;
+   
+   close(f1_handle); close(f2_handle); close(f3_handle); close(f4_handle);	 -- release all the files		
+   return num_runs;
+   
+end files_merge;
+		   
+procedure more_runs(f1_handle,prior_f1,f2_handle,prior_f2,f3_handle);
+		   -- merge runs from f1 and f2 into f3; return [] if the end of both input files is reached
+		   
+   if prior_f1 = OM then geta(f1_handle,f1_elt); else f1_elt := prior_f1; end if;	  -- try to  get next element of each input
+   if prior_f2 = OM then geta(f2_handle,f2_elt); else f2_elt := prior_f2; end if;
+
+   if f1_elt = OM and f2_elt = OM then return []; end if;	-- the end of both input files is reached
+   
+   if f1_elt = OM then				-- no more elements in f1
+
+	   printa(f3_handle,prior_elt := f2_elt);		 -- move f2 element to output
+	   geta(f2_handle,f2_elt);						-- read another f2 element
+
+   elseif f2_elt = OM then			-- no more elements in f2
+
+	   printa(f3_handle,prior_elt := f1_elt);	  -- move f1 element to output
+	   geta(f1_handle,f1_elt);						-- read another f1 element
+
+   elseif f1_elt < f2_elt then	  -- use element of f1, which is  smaller
+
+	   printa(f3_handle,prior_elt := f1_elt);		 -- move f1 element to output
+	   geta(f1_handle,f1_elt);						-- read another f1 element
+
+   else							  -- use element of f2, which is  smaller
+
+	   printa(f3_handle,prior_elt := f2_elt);		 -- move f2 element to output
+	   geta(f2_handle,f2_elt);						-- read another f2 element
+
+   end if;
+   
+   while f1_elt /= OM or f2_elt /= OM loop		-- now loop, moving the whole of an increasing run
+		   
+	   if f1_elt = OM then				-- no more elements in f1
+
+		   if f2_elt < prior_elt then return [OM,f2_elt]; end if;		-- run ends; return f2_elt
+		   printa(f3_handle,prior_elt := f2_elt);		 -- move f2 element to output
+		   geta(f2_handle,f2_elt);						-- read another f2 element
+
+	   elseif f2_elt = OM then			-- no more elements in f2
+
+		   if f1_elt < prior_elt then return [f1_elt]; end if;		-- run ends; return f1_elt
+		   printa(f3_handle,prior_elt := f1_elt);	  -- move f1 element to output
+		   geta(f1_handle,f1_elt);						-- read another f1 element
+
+	   elseif f1_elt < f2_elt then	  -- use element of f1, which is  smaller
+
+		   if f1_elt >= prior_elt then					  -- can use the smaller element
+			   printa(f3_handle,prior_elt := f1_elt);		 -- move f1 element to output
+			   geta(f1_handle,f1_elt);						-- read another f1 element
+		   elseif f2_elt >= prior_elt then				  -- can use the larger element
+			   printa(f3_handle,prior_elt := f2_elt);		 -- move f2 element to output
+			   geta(f2_handle,f2_elt);						-- read another f2 element
+		   else											-- neither element is good
+			   return [f1_elt,f2_elt];	 -- run ends; return both elements
+		   end if;
+
+	   else							  -- use element of f2, which is  smaller
+
+		   if f2_elt >= prior_elt then					  -- can use the smaller element
+			   printa(f3_handle,prior_elt := f2_elt);		 -- move f1 element to output
+			   geta(f2_handle,f2_elt);						-- read another f1 element
+		   elseif f1_elt >= prior_elt then				  -- can use the larger element
+			   printa(f3_handle,prior_elt := f1_elt);		 -- move f1 element to output
+			   geta(f1_handle,f1_elt);						-- read another f1 element
+		   else											-- neither element is good
+			   return [f1_elt,f2_elt];		 -- run ends; return both elements
+		   end if;
+
+	   end if;
+
+   end loop;
+
+   return [];			-- all runs ended
+   
+end more_runs;
+
+procedure flat_sort(source,field_len);		-- sort source flat
+	dest := flat_create(fls := flat_len(source));	-- create a second file
+	field_length := field_len;				-- globalize
+	flat_merge(source,fls,OM,OM,dest);		-- fourth parameter is part of third parameter filled, if supplied
+	return dest;
+end flat_sort;
+
+procedure flat_merge(source1,source1_fill,source2,source2_fill,rw dest);		-- sort pair of source flats into dest flat
+  				-- set up so can do actual merge, but currently called only by flat_sort
+  				
+   	f1 := flat_create(flat_len(source1)); f2 := flat_create(flat_len(source1));	
+   	f3 := dest; f4 := flat_create(flat_len(source1));		-- we will use three auxiliary flats altogether
+    write_point_3 := write_point_4 := 1;					-- set the write points of the output flats	
+	read_point_1 := read_point_2 := 1; 						-- set the read points of the input flats
+	num_filled_1 := source1_fill;							-- note size of first source
+--print("lens: ",flat_len(source1));	
+ 	if source2 = OM then 
+ 		num_filled_2 := 0;									-- note size of second source
+  		num_runs := flats_merge(source1,f4,f1,f2);			-- initial distribution into runs
+   	else
+ 		num_filled_2 := source2_fill;						-- note size of second source
+  		 num_runs := flats_merge(source1,source2,f1,f2);
+   	end if;
+	num_filled_1 := write_point_3 - 1; num_filled_2 := write_point_4 - 1; 		-- note the amount filled
+ 	
+ count := 0;   
+  	loop 				-- till num_runs = 0
+-- if (count +:= 1) >10 then print("long loop loop"); stop; end if;
+  	    write_point_3 := write_point_4 := 1;			-- set the write points of the output flats	
+	    read_point_1 := read_point_2 := 1; 			-- set the read points of the input flats
+	  
+   	    num_runs := flats_merge(f1,f2,f3,f4);		-- merge inputs into outputs
+
+   	    if  num_runs <= 1 then exit; end if;
+	    [f1,f2,f3,f4] := [f3,f4,f1,f2]; 
+   		num_filled_1 := write_point_3 - 1; num_filled_2 := write_point_4 - 1; 		-- note the amount filled
+
+--	   if even(num_runs) then [write_point_4,write_point_3] := [write_point_3,write_point_4]; end if;
+	
+  	end loop;
+
+   	dest := f3;			-- this is the result flat
+ 		   
+end flat_merge;
+
+procedure report(x,v,f); 
+	print("report: ",x," rp1: ",read_point_1," rp2: ",read_point_2," wp: ",write_point_3," ",v); 
+	peek_mer_mer_flat(f);
+	return v; 
+end report;
+
+procedure flats_merge(f1,f2,f3,f4);		
+	   -- merge ascending runs from the first two flats into the last two flats; return the number of runs.
+
+   num_runs := 1;
+
+count := 0;   
+
+   while more_flat_runs(f1,f2,f3) loop			-- report("a",more_flat_runs(f1,f2,f3),f3)
+
+	   num_runs +:= 1;					-- count up one more run
+	   				   
+				   -- merge next  pair of runs  into the alternate output flat
+		[write_point_3,write_point_4] := [write_point_4,write_point_3];
+
+	    if not more_flat_runs(f1,f2,f4) then 		-- report("b",more_flat_runs(f1,f2,f4),f4)
+		   [write_point_4,write_point_3] := [write_point_3,write_point_4]; return num_runs; 		-- unswithc the write points
+	    end if;
+
+		[write_point_4,write_point_3] := [write_point_3,write_point_4];
+
+	   num_runs +:= 1;					-- count up one more run
+
+   end loop;
+
+   return num_runs;
+   
+end flats_merge;
+		   
+procedure more_flat_runs(f1,f2,f3);
+		   -- merge runs from f1 and f2 into f3; return [] if the end of both input files is reached
+
+  	if read_point_1 > num_filled_1 then		-- past the end
+  		f1_elt := OM;
+  	else
+  		f1_elt := flat_slice(f1,read_point_1,read_point_1 + field_length - 1); read_point_1 +:= field_length;
+  	end if;
+ 		   
+   	if read_point_2 > num_filled_2 then		-- past the end
+  		f2_elt := OM;
+  	else
+  		f2_elt := flat_slice(f2,read_point_2,read_point_2 + field_length - 1); read_point_2 +:= field_length;
+  	end if;
+
+   if f1_elt = OM and f2_elt = OM then return false; end if;	-- the end of both input files is reached
+   
+   if f1_elt = OM then				-- no more elements in f1
+
+	   	prior_elt := f2_elt; 			-- prior_elt is always the last element written
+
+	   	flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length;	 	 -- move f2 element to output
+ 		if read_point_2 > num_filled_2 then		-- past the end
+   			f2_elt := OM;
+   		else
+   			f2_elt := flat_slice(f2,read_point_2,read_point_2 + field_length - 1); read_point_2 +:= field_length;
+    		end if;
+
+   elseif f2_elt = OM then			-- no more elements in f2
+
+ 	   	prior_elt := f1_elt; 			-- prior_elt is always the last element written
+
+	   	flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length;	 	 -- move f1 element to output
+
+  	   	if read_point_1 > num_filled_1 then		-- past the end
+   			f1_elt := OM;
+   		else
+   			f1_elt := flat_slice(f1,read_point_1,read_point_1 + field_length - 1); read_point_1 +:= field_length;
+   		end if;
+
+   elseif flat_to_setl(f1_elt) < flat_to_setl(f2_elt) then	  -- use element of f1, which is  smaller
+
+ 	   	prior_elt := f1_elt; 			-- prior_elt is always the last element written
+
+ 	   	flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length;	 	 -- move f1 element to output
+  	   	if read_point_1 > num_filled_1 then		-- past the end
+   			f1_elt := OM;
+   		else
+   			f1_elt := flat_slice(f1,read_point_1,read_point_1 + field_length - 1); read_point_1 +:= field_length;
+   		end if;
+
+   else							  -- use element of f2, which is  smaller
+
+	   	prior_elt := f2_elt; 			-- prior_elt is always the last element written
+
+	   	flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length;	 	 -- move f2 element to output
+  		if read_point_2 > num_filled_2 then		-- past the end
+   			f2_elt := OM;
+   		else
+   			f2_elt := flat_slice(f2,read_point_2,read_point_2 + field_length - 1); read_point_2 +:= field_length;
+   		end if;
+
+   end if;
+
+   while f1_elt /= OM or f2_elt /= OM loop		-- now loop, moving the whole of an increasing run
+
+	   if f1_elt = OM then				-- no more elements in f1
+
+		   	if flat_to_setl(f2_elt) < flat_to_setl(prior_elt) then read_point_2 -:= field_length; return true; end if;		-- run ends; back up f2_elt
+	   		prior_elt := f2_elt; 			-- prior_elt is always the last element written
+
+	   		flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length;	 	 -- move f2 element to output
+
+	  		if read_point_2 > num_filled_2 then		-- past the end
+	   			f2_elt := OM;
+	   		else									-- read another f2 element
+	   			f2_elt := flat_slice(f2,read_point_2,read_point_2 + field_length - 1); read_point_2 +:= field_length;
+ 	   		end if;
+
+	   elseif f2_elt = OM then			-- no more elements in f2
+
+		   	if flat_to_setl(f1_elt) < flat_to_setl(prior_elt) then read_point_1 -:= field_length; return true; end if;		-- run ends; back up f1_elt
+
+	 	  	prior_elt := f1_elt; 
+
+	 	  	flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length; 		 -- move f1 element to output
+ 
+	  	   	if read_point_1 > num_filled_1 then		-- past the end
+	   			f1_elt := OM;
+	   		else									-- read another f1 element
+	   			f1_elt := flat_slice(f1,read_point_1,read_point_1 + field_length - 1); read_point_1 +:= field_length;
+
+   			end if;
+
+	   elseif flat_to_setl(f1_elt) < flat_to_setl(f2_elt) then	  -- try to use element of f1, which is  smaller
+
+		   	if flat_to_setl(f1_elt) >= flat_to_setl(prior_elt) then					  -- can use the smaller element
+
+	   			prior_elt := f1_elt; flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length; 		 -- move f1 element to output
+	
+		  	   	if read_point_1 > num_filled_1 then		-- past the end
+		   			f1_elt := OM;
+		   		else									-- read another f1 element
+		   			f1_elt := flat_slice(f1,read_point_1,read_point_1 + field_length - 1); read_point_1 +:= field_length;
+ 	   			end if;
+
+		   	elseif flat_to_setl(f2_elt) >= flat_to_setl(prior_elt) then				  -- can use the larger element
+	   			prior_elt := f2_elt; flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length;  		 -- move f2 element to output
+
+		  		if read_point_2 > num_filled_2 then		-- past the end
+		   			f2_elt := OM;
+		   		else									-- read another f2 element
+		   			f2_elt := flat_slice(f2,read_point_2,read_point_2 + field_length - 1); read_point_2 +:= field_length;
+ 		   		end if;
+
+		   	else											-- neither element is good
+				read_point_1 -:= field_length; read_point_2 -:= field_length; return true; 	 -- run ends; back up both elements
+		   	end if;
+
+	   else							  -- use element of f2, which is  smaller
+
+		   	if flat_to_setl(f2_elt) >= flat_to_setl(prior_elt) then					  -- can use the smaller element
+
+		   		prior_elt := f2_elt; flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length;	 	 -- move f2 element to output
+
+		  		if read_point_2 > num_filled_2 then		-- past the end
+		   			f2_elt := OM;
+		   		else									-- read another f2 element
+		   			f2_elt := flat_slice(f2,read_point_2,read_point_2 + field_length - 1); read_point_2 +:= field_length;
+ 		   		end if;
+
+		   	elseif flat_to_setl(f1_elt) >= flat_to_setl(prior_elt) then				  -- can use the larger element
+
+	   			prior_elt := f1_elt; 
+
+	   			flat_set_slice(f3,write_point_3,prior_elt); write_point_3 +:= field_length;	 	 -- move f1 element to output
+
+		  	   	if read_point_1 > num_filled_1 then		-- past the end
+		   			f1_elt := OM;
+		   		else									-- read another f1 element
+		   			f1_elt := flat_slice(f1,read_point_1,read_point_1 + field_length - 1); read_point_1 +:= field_length;
+ 	   			end if;
+
+		   	else											-- neither element is good
+ 			   read_point_1 -:= field_length; read_point_2 -:= field_length; return true;		 -- run ends; back up both elements
+		   	end if;
+
+	   end if;
+
+   end loop;
+
+   return false;			-- all runs ended
+   
+end more_flat_runs;
+
+procedure erase(file);		-- file erasure procedure
+	close(open(file,"TEXT-OUT"));		 -- open the file for writing,  and then immediately close it
+end erase;
+		   
+procedure copy(source,dest);		-- file copy procedure
+
+   source_handle := open(source,"TEXT-IN");		 -- open the source file for reading
+   dest_handle := open(dest,"TEXT-OUT");	 -- open the dest file for writing
+
+   geta(source_handle,line);		-- read a first line
+
+   while line /= OM loop
+	   printa(dest_handle,line);	--  move remaining lines
+	   geta(source_handle,line);
+   end loop;
+   
+   close(source_handle); close(dest_handle); 
+end copy;
+
+procedure unix_sort(source_name,dest_name,param_stg);		-- sort file to file by unix method
+	-- the param_stg should be as described in the unix man-pges for 'sort'
+	-- note that this assumes that the file being processed has '\n' line breaks
+	
+	unix_command := "sort " + " -o " + dest_name + " " + param_stg + " "  + source_name;
+	return system(unix_command);
+end unix_sort;
+
+end sort_pak;
+
+program sort_test;			-- test of sorting operations
+
+	use sort_pak,string_utility_pak,get_lines_pak;
+	test_sorting();		-- test miscellaneous sorting-related functions
+	
+	procedure test_sorting();		-- test of miscellaneous sorting-related functions
+					
+		num_tests := 16;			-- total number of tests
+		tests_all_ok := true; bad_tests := []; 
+		
+		for j in [1..num_tests] loop			-- 15 tests altogether
+		
+			case j
+				when 1 => if (ms1 := merge_sort(["Jack","Fudge","Jackie","Jacki","Diana","Abe"])) /=
+							(ms2 := merge_sort(["Jack","Jacki","Diana","Abe","Fudge","Jackie"])) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 1 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 2 => if (ms1 := merge_sort({"jack","jackie","jill","went","up","hill"})) /= 
+							(ms2 := merge_sort(["jack","jackie","jill","went","up","hill"])) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 2 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+				when 3 => if (ms1 := merge_sort({["jack",1],["jackie",2],["jill",3],["went",4],["up",5],["hill",6]})) /= 
+							(ms2 := merge_sort({["jill",3],["went",4], ["jack",1],["jackie",2],["jill",3],["went",4], 	
+												["up",5],["hill",6]})) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 3 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 4 => 	tup := [3*(20 - n): n in [1..20]];		-- test bin_sort 
+							if (ms1 := merge_sort(tup)) /=  (ms2 := bin_sort(tup,2)) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 4 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 5 => 	tup := [3*(20 - n): n in [1..20]];		-- test bin_sort 
+							if (ms1 := merge_sort(tup)) /=  (ms2 := bin_sort(tup,4)) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 5 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 6 => 	tup := [3*(20 - n): n in [1..20]];		-- test bin_sort 
+							if (ms1 := merge_sort(tup)) /=  (ms2 := bin_sort(tup,10)) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 6 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+				when 7 =>
+							for k in [1..31] loop
+		  						set_to_sort := {-n: n in [1..k]};	  -- test Ford-Johnson comparison-saving sort
+								if (ms1 := ford_johnson(set_to_sort)) /= (ms2 := merge_sort(set_to_sort)) then
+									tests_all_ok := false; bad_tests(j) := true;
+									print("Sort test 7 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+								end if;
+							end loop;
+				when 8 => if (ms1 := quicksort([3,7,4,1,5,0])) /= 
+							(ms2 := merge_sort([3,7,4,1,5,0])) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 8 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 9 => if (ms1 := quicksort([3,7,4,1,5,0])) /= 
+							(ms2 := shellsort([3,7,4,1,5,0])) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 9 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 10 => tup := [[x,x]: x in [-10,1,1,2,3,2,2,1,0,-1,1,2,3,4,3,4,2,0]];
+							if (ms1 := linsort(tup)) /=  (ms2 := merge_sort(tup)) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 10 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 11 => if (ms1 := kth((tup := [-m: m in [1..250]]),245)) /=  (ms2 := tup(6)) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 11 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 12 => 	stg_to_sort := 10 * "Jack  Fudge JackieJacki Diana Abe   ";				-- flat sort test
+							tup_to_sort :=  [stg_to_sort(j..j + 5): j in [1,7..#stg_to_sort - 1]];
+							if (ms1 := flat_to_setl(flat_sort(flat_from_setl(stg_to_sort),6))) /=  
+											(ms2 := "" +/ merge_sort(tup_to_sort)) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 12 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 13 =>  stg_to_sort := 5 * "Jack  Fudge JackieJacki Diana Abe   ";				-- flat sort test
+							tup_to_sort :=  [stg_to_sort(j..j + 5): j in [1,7..#stg_to_sort - 1]];
+							if (ms1 := flat_to_setl(flat_sort(flat_from_setl(stg_to_sort),6))) /=  
+											(ms2 := "" +/ merge_sort(tup_to_sort)) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 13 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 14 => file_sort(ifile := "test_files/test_linefile",ofile := "test_files/test_linefile_sorted");
+											-- sort source line-file  into dest file
+							lines := get_lines(ifile); olines := get_lines(ofile); 
+							if (ms1 := merge_sort(lines)) /=  (ms2 := olines) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 14 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+				when 15 =>  file_merge(ifile1 := "test_files/test_linefile_sorted",ifile2 := "test_files/test_linefile_sorted",
+										ofile := "test_files/test_linefile_sorted2");		
+											-- merge pair of source line-files into dest line-file
+
+							lines1 := get_lines(ifile1); lines2 := get_lines(ifile2); olines := get_lines(ofile); 
+							if (ms1 := merge_sort(lines1 + lines2)) /=  (ms2 := olines) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 15 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+							end if;
+
+				when 16 =>  	-- sort file to file by unix method
+
+					unix_sort(ifile := "test_files/test_linefile",ofile := "test_files/unix_linefile_sorted","-r");	
+							-- final parameter is collection of Unix sort options; 
+							-- note thaaht unix '\n' linebreaks are required
+						data := merge_sort(get_lines(ifile)); 
+						if (ms1 := get_lines(ofile)) /= (ms2 := [data(j): j in [#data,#data - 1..1]]) then
+								tests_all_ok := false; bad_tests(j) := true;
+								print("Sort test 16 *******FAILED******* ms1 = ",ms1," ms2 = ",ms2);
+						end if;
+					
+
+			end case;
+
+		end loop;
+		
+		if (tests_all_ok) then 
+			print("All sort tests OK"); 
+		else 
+			print("Successful tests: ",[n in [1..num_tests] | bad_tests(n) = OM]); 
+		end if;
+	
+	end test_sorting;
+	
+end sort_test;

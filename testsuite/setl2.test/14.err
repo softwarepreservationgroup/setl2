@@ -1,0 +1,10 @@
+
+*** Abnormal End -- source file => 14.stl
+                    line   => 9
+                    column => 10
+
+Invalid slice limits:
+Source => string: length 8
+Left => integer: 5
+Right => integer: 10
+

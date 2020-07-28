@@ -1,0 +1,13 @@
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("String index error test");
+
+   string := "length 8";
+
+   string(5 .. 3) := "hi";
+
+   End_Test;
+
+end test_program;

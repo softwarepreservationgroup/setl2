@@ -1,0 +1,11 @@
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("FLOOR domain error test");
+
+   x := floor(5.5e20);
+
+   End_Test;
+
+end test_program;

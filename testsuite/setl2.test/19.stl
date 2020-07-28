@@ -1,0 +1,337 @@
+-- =======================================================================
+--
+--  Set Operations Test
+--  ===================
+--
+--  This file is intended to test the set operations described
+--  on pages 57-59 of "Programming With Sets: An Introduction to SETL".
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Test_Sets := { {char(x) : x in [abs("a") .. abs("z")]} } +
+                { {1 .. x} : x in {1 .. 20}} +
+                { {1 .. 1000}, pow({1 .. 5}) };
+
+   Begin_Test("Set operations test");
+
+   --
+   --  Test set union.
+   --
+
+   for Left in Test_Sets, Right in Test_Sets loop
+
+      Join := Left + Right;
+
+      if (exists x in Left | x notin Join) or
+         (exists x in Right | x notin Join) or 
+         (exists x in Join | x notin Left and x notin Right) then
+
+         Log_Error(["Set union failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Join = "+str(Join)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test set difference.
+   --
+
+   for Left in Test_Sets, Right in Test_Sets loop
+
+      Join := Left - Right;
+
+      if (exists x in Left | x in Right and x in Join) or
+         (exists x in Left | x notin Right and x notin Join) or
+         (exists x in Join | x notin Left or x in Right) then
+
+         Log_Error(["Set difference failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Join = "+str(Join)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test set intersection.
+   --
+
+   for Left in Test_Sets, Right in Test_Sets loop
+
+      Join := Left * Right;
+
+      if (exists x in Left | x in Right and x notin Join) or
+         (exists x in Right | x in Left and x notin Join) or
+         (exists x in Join | x notin Left or x notin Right) then
+
+         Log_Error(["Set intersection failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Join = "+str(Join)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test set symmetric difference.
+   --
+
+   for Left in Test_Sets, Right in Test_Sets loop
+
+      Join := Left mod Right;
+
+      if (exists x in Left | x in Right and x in Join) or
+         (exists x in Right | x in Left and x in Join) or
+         (exists x in Join | x notin Left and x notin Right) then
+
+         Log_Error(["Set symmetric difference failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Join = "+str(Join)]);
+
+      end if;
+
+   end loop;
+
+   Join := om;
+
+   --
+   --  Test with and less.
+   --
+
+   for Test in Test_Sets loop
+
+      if Test with 5 /= Test + {5} then
+
+         Log_Error(["With failed!",
+                    "Test = "+str(Test),
+                    "Test with 5 ="+str(Test with 5),
+                    "Test + {5} = "+str(Test + {5})]);
+
+      end if;
+
+      if Test less 5 /= Test - {5} then
+
+         Log_Error(["Less failed!",
+                    "Test = "+str(Test),
+                    "Test less 5 ="+str(Test less 5),
+                    "Test - {5} = "+str(Test - {5})]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test npow operator.
+   --
+
+   for Test in {x in Test_Sets | #x < 7} loop
+
+      for N in [0 .. #Test + 1] loop
+
+         nPower := N npow Test;
+         
+         Comb := 1;
+
+         for i in [N + 1 .. #Test] loop
+            
+            Comb *:= i;
+
+         end loop;
+
+         for i in [2 .. #Test - N] loop
+
+            Comb /:= i;
+
+         end loop;
+
+         if N = #Test + 1 then
+
+            Comb := 0;
+
+         end if;
+
+         if #nPower /= Comb then
+
+            Log_Error(["Npow failed!",
+                       "Test = "+str(Test),
+                       "N = "+str(N),
+                       "nPower ="+str(N npow Test)]);
+
+         end if;
+
+         if Comb = 0 then 
+
+            continue;
+
+         end if;
+
+         if exists x in nPower | #x /= N then
+
+            Log_Error(["Npow failed!",
+                       "Test = "+str(Test),
+                       "N = "+str(N),
+                       "nPower ="+str(N npow Test)]);
+
+         end if;
+
+         if exists x in nPower | 
+               exists y in x | y notin Test then
+
+            Log_Error(["Npow failed!",
+                       "Test = "+str(Test),
+                       "N = "+str(N),
+                       "nPower ="+str(N npow Test)]);
+
+         end if;
+         
+      end loop;
+
+   end loop;
+   
+   nPower := om;
+
+   --
+   --  Test subset and incs.
+   --
+
+   for Test in Test_Sets loop
+
+      Sub_Set := Test;
+
+      if not (Sub_Set subset Test) or not (Test incs Sub_Set) then
+
+         Log_Error(["Subset or incs failed!",
+                    "Test = "+str(Test),
+                    "Sub_Set ="+str(Sub_Set)]);
+
+      end if;
+
+      if not (Sub_Set incs Test) or not (Test subset Sub_Set) then
+
+         Log_Error(["Subset or incs failed!",
+                    "Test = "+str(Test),
+                    "Sub_Set ="+str(Sub_Set)]);
+
+      end if;
+
+      for x in Test loop
+
+         Sub_Set less:= x;
+
+         if not (Sub_Set subset Test) or not (Test incs Sub_Set) then
+
+            Log_Error(["Subset or incs failed!",
+                       "Test = "+str(Test),
+                       "Sub_Set ="+str(Sub_Set)]);
+
+         end if;
+
+         if Sub_Set incs Test or Test subset Sub_Set then
+
+            Log_Error(["Subset or incs failed!",
+                       "Test = "+str(Test),
+                       "Sub_Set ="+str(Sub_Set)]);
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   Sub_Set := om;
+
+   --
+   --  Test arb and less.
+   --
+
+   for Test in Test_Sets loop
+
+      while Test /= {} loop
+
+         if arb(Test) notin Test then
+
+            Log_Error(["Arb failed!",
+                       "Test = "+str(Test),
+                       "arb(Test) = "+str(arb(Test))]);
+
+         end if;
+
+         Test less:= arb(Test);
+
+      end loop;
+
+      if arb(Test) /= om then
+
+         Log_Error(["Arb failed!",
+                    "Test = "+str(Test),
+                    "arb(Test) = "+str(arb(Test))]);
+
+      end if;
+
+   end loop;
+
+   Test := om;
+
+   --
+   --  Test pow operator.
+   --
+
+   for Test in {x in Test_Sets | #x < 5} loop
+
+      Power := pow(Test);
+
+      if #Power /= 2 ** #Test then
+
+         Log_Error(["Pow failed!",
+                    "Test = "+str(Test),
+                    "Power ="+str(pow(Test))]);
+
+      end if;
+
+      Set_Array := [[0,x] : x in Test];
+
+      Rebuilt_Power := {};
+
+      while true loop
+
+         Rebuilt_Power with := {e : [s,e] in Set_Array | s = 1};
+
+         if not (exists n in [1 .. #Set_Array] |
+                  Set_Array(n)(1) = 0) then
+
+            exit;
+
+         end if;
+
+         for i in [1 .. n - 1] loop
+
+            Set_Array(i)(1) := 0;
+
+         end loop;
+
+         Set_Array(n)(1) := 1;
+
+      end loop;
+         
+      if Power /= Rebuilt_Power then
+
+         Log_Error(["Pow failed!",
+                    "Test = "+str(Test),
+                    "Power ="+str(pow(Test))]);
+
+      end if;
+
+   end loop;
+
+   End_Test;
+
+end test_program;

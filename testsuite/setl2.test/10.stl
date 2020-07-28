@@ -1,0 +1,374 @@
+-- ==========================================================================
+--
+--  String Operations Test
+--  ======================
+--
+--  This file is intended to test the floating point operations described
+--  on pages 40-43 of "Programming With Sets: An Introduction to SETL".
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("String operations test");
+
+   --
+   --  Test string indexing.
+   --
+
+   Test_String := "Now is the time for all good men to come to the aid " +  
+                  "of their country";
+
+   Rebuilt_String := "";
+ 
+   for i in [1 .. #Test_String] loop
+
+      Rebuilt_String +:= Test_String(i);
+
+   end loop;
+
+   if Rebuilt_String /= Test_String then
+
+      Log_Error(["Indexing or concatenation failed!",
+                 "Test_String = "+str(Test_String),
+                 "Rebuilt_String = "+str(Rebuilt_String)]);
+
+   end if;
+
+   if Test_String(#Test_String + 1) /= om then
+
+      Log_Error(["Indexing failed!",
+                 "Test_String = "+str(Test_String),
+                 "Test_String(<end>) = "+str(Test_String(#Test_String + 1))]);
+
+   end if;
+
+   --
+   --  Test slice.
+   --
+
+   Left_String    := "";
+   
+   for i in [1 .. 100] loop
+
+      Left_String +:= "Hi there! ";
+      
+      Right_String := "";
+      for i in [i * 3 .. i * 8] loop
+
+         Right_String +:= Left_String(i);
+
+      end loop;
+
+      if Left_String(i * 3 .. i * 8) /= Right_String then
+
+         Log_Error(["Slice failed!",
+                    "Left = "+str(Left_String(i * 3 .. i * 8)),
+                    "Right = "+str(Right_String)]);
+
+      end if;
+
+      Right_String := "";
+      for i in [i * 3 .. i * 10] loop
+
+         Right_String +:= Left_String(i);
+
+      end loop;
+
+      if Left_String(i * 3 ..) /= Right_String then
+
+         Log_Error(["Slice failed!",
+                    "Left = "+str(Left_String(i * 3 .. i * 10)),
+                    "Right = "+str(Right_String)]);
+
+      end if;
+
+      if Left_String(#Left_String + 1 ..) /= "" then
+
+         Log_Error(["Slice failed!",
+                    "Left = "+str(Left_String(#Left_String + 1 ..))]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test string concatenation.
+   --
+
+   Left_String := "";
+
+   for i in [0 .. 100] loop
+
+      Right_String := "";
+
+      for j in [0 .. 100] loop
+
+         Result_String := Left_String + Right_String;
+
+         if #Result_String /= i + j then
+
+            Log_Error(["Concatenation failed!",
+                       "Left_String = "+str(Left_String),
+                       "Right_String = "+str(Right_String),
+                       "Result_String = "+str(Result_String)]);
+
+         end if;
+
+         for k in [1 .. i + j] loop
+
+            if Result_String(k) /= "x" then
+
+               Log_Error(["Concatenation failed!",
+                          "k ="+str(k),
+                          "Result_String(k) = "+str(Result_String(k))]);
+
+               exit;
+
+            end if;
+
+         end loop;
+
+         Right_String +:= "x";
+
+      end loop;
+
+      Left_String +:= "x";
+
+   end loop;
+
+   --
+   --  Test string multiplication.
+   --
+
+   Test_String := "Something ";
+   
+   Rebuilt_String := "";
+ 
+   for i in [1 .. 20] loop
+
+      Rebuilt_String +:= Test_String;
+      
+      if Rebuilt_String /= Test_String * i then
+
+         Log_Error(["Multiplication failed!",
+                    "Test_String = "+str(Test_String),
+                    "Rebuilt_String = "+str(Rebuilt_String)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test string less than.
+   --
+
+   if not ("a" < "ba") then
+
+      Log_Error(["< failed!",
+                 "\"a\" not < \"ba\""]);
+
+   end if;
+
+   if not ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" <
+           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba") then
+
+      Log_Error(["< failed!",
+                 "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" not < " +
+                 "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba\""]);
+
+   end if;
+
+   if not ("aa" < "ab") then
+
+      Log_Error(["< failed!",
+                 "\"aa\" not < \"ab\""]);
+
+   end if;
+
+   if not ("a" < "ab") then
+
+      Log_Error(["< failed!",
+                 "\"a\" not < \"ab\""]);
+
+   end if;
+
+   --
+   --  Test substring "in".
+   --
+
+   if not ("a" in "ba") then
+
+      Log_Error(["in failed!",
+                 "\"a\" not in \"ba\""]);
+
+   end if;
+
+   if not ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" <
+           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba") then
+
+      Log_Error(["in failed!",
+                 "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" not in " +
+                 "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba\""]);
+
+   end if;
+
+   if "aa" in "ab" then
+
+      Log_Error(["in failed!",
+                 "\"aa\" in \"ab\""]);
+
+   end if;
+
+   --
+   --  Test abs and char against each other.
+   --
+
+   for i in [abs("a") .. abs("z")] loop
+   
+      if abs(char(i)) /= i then
+
+         Log_Error(["Abs or char failed!",
+                    "Char(i) = "+str(char(i)),
+                    "Abs(char(i)) = "+str(abs(char(i)))]);
+
+      end if;
+
+   end loop;
+      
+   --
+   --  Test sinister assignment.
+   --
+
+   Base_String := "";
+   
+   for i in [1 .. 200] loop
+
+      Base_String +:= "x";
+
+   end loop;
+   for i in [1 .. 200] loop
+
+      Test_String := Base_String;
+      Test_String(i) := "y";
+
+      if exists j in {1 .. 200} - {i} | Test_String(j) /= "x" then
+
+         Log_Error(["String assignment failed!",
+                    "Test_String = "+str(Test_String)]);
+
+      end if;
+
+      if Test_String(i) /= "y" then
+
+         Log_Error(["String assignment failed!",
+                    "Test_String = "+str(Test_String)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test slice assignment.
+   --
+
+   Base_String := "";
+   
+   for i in [1 .. 100] loop
+
+      Base_String +:= "x";
+
+   end loop;
+
+   for i in [1 .. 101] loop
+
+      for j in [i - 1 .. 100] loop
+
+         Result := Base_String;
+         Slice := "yyyyy";
+         Result(i .. j) := Slice;
+
+         if #Result /= #Base_String - j + i - 1 + #Slice then
+ 
+            Log_Error(["Slice assignment failed!",
+                       "Base_String = "+str(Base_String),
+                       "Result = "+str(Result)]);
+
+         end if;
+
+         if exists k in [1 .. i - 1] | Result(k) /= Base_String(k) then
+ 
+            Log_Error(["Slice assignment failed!",
+                       "Base_String = "+str(Base_String),
+                       "Result = "+str(Result)]);
+
+         end if;
+
+         if exists k in [1 .. #Slice] |
+                Result(i + k - 1) /= Slice(k) then
+ 
+            Log_Error(["Slice assignment failed!",
+                       "Base_String = "+str(Base_String),
+                       "Result = "+str(Result)]);
+
+         end if;
+
+         if exists k in [1 .. #Base_String - j] |
+                   Result(i + #Slice + k - 1) /= Base_String(j + k) then
+ 
+            Log_Error(["Slice assignment failed!",
+                       "Base_String = "+str(Base_String),
+                       "Result = "+str(Result)]);
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   --
+   --  Test end assignment.
+   --
+
+   Base_String := "";
+   
+   for i in [1 .. 100] loop
+
+      Base_String +:= "x";
+
+   end loop;
+
+   for i in [1 .. 101] loop
+
+      Insert_String := "yyyyy";
+
+      Test_String := Base_String;
+      Test_String(i ..) := Insert_String;
+
+      if #Test_String /= i + 4 then
+
+         Log_Error(["End assignment failed!",
+                    "Test_String = "+str(Test_String)]);
+
+      end if;
+
+      if exists k in {1 .. i - 1} | Test_String(k) /= "x" then
+
+         Log_Error(["End assignment failed!",
+                    "Test_String = "+str(Test_String)]);
+
+      end if;
+
+      if exists k in {i .. #Test_String} | Test_String(k) /= "y" then
+
+         Log_Error(["End assignment failed!",
+                    "Test_String = "+str(Test_String)]);
+
+      end if;
+
+   end loop;
+
+   End_Test;
+
+end test_program;

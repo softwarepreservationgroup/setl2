@@ -1,0 +1,418 @@
+-- ===================================================================
+--
+--  Iterator Test
+--  =============
+--
+--  This program tests a variety of iterators.  There are a great many
+--  places where iterators are used, and we can not hope to test them
+--  exhaustively, but we do the best we can.
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("Iterator test");
+
+   --
+   --  Test an iteration over a set.
+   --
+
+   Source := {i : i in [1 .. 50]};
+
+   Set := {x : x in Source};
+   
+   if #Set /= 50 or (exists i in [1 .. 50] | i notin Source) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+
+   Set := {x : i in {1 .. 7}, x in Source, j in {1 .. 7}};
+   
+   if #Set /= 50 or (exists i in [1 .. 50] | i notin Source) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+
+   --
+   --  Test an iteration over a map.
+   --
+
+   Map := {[i, i**2] : i in [1 .. 50]};
+
+   Junk := Map(i);       -- convert set to map
+
+   Set := {x : x in Map};
+   
+   if #Set /= 50 or (exists i in [1 .. 50] | [i, i**2] notin Set) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+
+   Set := {x : i in {1 .. 7}, x in Map, j in {1 .. 7}};
+   
+   if #Set /= 50 or (exists i in [1 .. 50] | [i, i**2] notin Set) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+
+   --
+   --  Test an iteration over a tuple.
+   --
+
+   Source := [i : i in [1 .. 50]];
+
+   Tuple := {x : x in Source};
+   
+   if #Tuple /= 50 or (exists i in [1 .. 50] | i notin Source) then
+
+      Log_Error(["Tuple former failed!",
+                 "Tuple = "+str(Tuple)]);
+
+   end if;
+
+   Tuple := om;
+
+   Tuple := {x : i in {1 .. 7}, x in Source, j in {1 .. 7}};
+   
+   if #Tuple /= 50 or (exists i in [1 .. 50] | i notin Source) then
+
+      Log_Error(["Tuple former failed!",
+                 "Tuple = "+str(Tuple)]);
+
+   end if;
+
+   Tuple := om;
+
+   --
+   --  Test an iteration over a string.
+   --
+
+   Source := "abcdefghijklmnopqrstuvwxyz0123456789";
+
+   String := {abs(x) : x in Source};
+   
+   if #String /= 36 or
+       (exists i in [abs("a") .. abs("z")] | char(i) notin Source) or
+       (exists i in [abs("0") .. abs("9")] | char(i) notin Source) then
+
+      Log_Error(["Set former failed!",
+                 "String = "+str(String)]);
+
+   end if;
+
+   String := om;
+
+   String := {abs(x) : i in {1 .. 7}, x in Source, j in {1 .. 7}};
+   
+   if #String /= 36 or
+       (exists i in [abs("a") .. abs("z")] | char(i) notin Source) or
+       (exists i in [abs("0") .. abs("9")] | char(i) notin Source) then
+
+      Log_Error(["Set former failed!",
+                 "String = "+str(String)]);
+
+   end if;
+
+   String := om;
+
+   --
+   --  Test an iteration over a map domain.
+   --
+
+   Source := {[i, i**2] : i in [1 .. 50]};
+
+   Dom := {x : x in domain(Source)};
+
+   if Dom /= domain(Source) then
+
+      Log_Error(["Set former failed!",
+                 "Dom = "+str(Dom)]);
+
+   end if;
+
+   Dom := om;
+
+   Dom := {x : i in {1 .. 7}, x in domain(Source), j in {1 .. 7}};
+
+   if Dom /= domain(Source) then
+
+      Log_Error(["Set former failed!",
+                 "Dom = "+str(Dom)]);
+
+   end if;
+
+   Dom := om;
+
+   --
+   --  Test power sets.
+   --
+
+   Source := {1 .. 5};
+
+   Powset := {x : x in pow(Source)};
+
+   if Powset /= pow(Source) then
+
+      Log_Error(["Set former failed!",
+                 "Powset = "+str(Powset)]);
+
+   end if;
+
+   Powset := om;
+
+   Powset := {x : i in {1 .. 2}, x in pow(Source), j in {1 .. 2}};
+
+   if Powset /= pow(Source) then
+
+      Log_Error(["Set former failed!",
+                 "Powset = "+str(Powset)]);
+
+   end if;
+
+   Powset := om;
+
+   Source := {1 .. 5};
+
+   Powset := {x : x in 5 npow Source};
+
+   if Powset /= 5 npow Source then
+
+      Log_Error(["Set former failed!",
+                 "Powset = "+str(Powset)]);
+
+   end if;
+
+   Powset := om;
+
+   Powset := {x : i in {1 .. 2}, x in 5 npow Source, j in {1 .. 2}};
+
+   if Powset /= 5 npow Source then
+
+      Log_Error(["Set former failed!",
+                 "Powset = "+str(Powset)]);
+
+   end if;
+
+   Powset := om;
+
+   --
+   --  Test iterations over maps.
+   --
+
+   Map := {[i, i**2] : i in [1 .. 50]};
+
+   Junk := Map(i);       -- convert set to map
+
+   Set := {[x,y] : y = Map(x)};
+   
+   if #Set /= 50 or (exists i in [1 .. 50] | [i, i**2] notin Set) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+
+   Set := {[x,y] : i in {1 .. 2}, y = Map(x), j in {1 .. 2}};
+   
+   if #Set /= 50 or (exists i in [1 .. 50] | [i, i**2] notin Set) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+   Map := om;
+
+   Map := {[i, i**2] : i in [1 .. 50]};
+   Map +:= {[i, i**3] : i in [1 .. 50]};
+
+   Junk := Map{i};       -- convert set to map
+
+   Set := {[x,y] : y = Map{x}};
+   
+   if #Set /= 50 or
+      (exists i in [1 .. 50] | [i, {i**2,i**3}] notin Set) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+
+   Set := {[x,y] : i in {1 .. 2}, y = Map{x}, j in {1 .. 2}};
+   
+   if #Set /= 50 or
+      (exists i in [1 .. 50] | [i, {i**2,i**3}] notin Set) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+   Map := om;
+
+   --
+   --  Test set formers where the source is an arithmetic iterator.
+   --
+
+   Set := {x : x in [1 .. 50]};
+   
+   if #Set /= 50 or (exists i in [1 .. 50] | i notin Set) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+
+   Set := {x : x in [1 .. 50] | x**2 <= 400};
+   
+   if #Set /= 20 or (exists i in [1 .. 20] | i notin Set) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+
+   Set := {x in [1 .. 50] | x**2 <= 400};
+   
+   if #Set /= 20 or (exists i in [1 .. 20] | i notin Set) then
+
+      Log_Error(["Set former failed!",
+                 "Set = "+str(Set)]);
+
+   end if;
+
+   Set := om;
+
+   --
+   --  Test tuple formers where the source is an arithmetic iterator.
+   --
+
+   Tuple := [x : x in [1 .. 50]];
+   
+   if #Tuple /= 50 or (exists i in [1 .. 50] | Tuple(i) /= i) then
+
+      Log_Error(["Tuple former failed!",
+                 "Tuple = "+str(Tuple)]);
+
+   end if;
+
+   Tuple := om;
+
+   Tuple := [x : x in [1 .. 50] | x**2 <= 400];
+   
+   if #Tuple /= 20 or (exists i in [1 .. 20] | Tuple(i) /= i) then
+
+      Log_Error(["Tuple former failed!",
+                 "Tuple = "+str(Tuple)]);
+
+   end if;
+
+   Tuple := om;
+
+   Tuple := [x in [1 .. 50] | x**2 <= 400];
+   
+   if #Tuple /= 20 or (exists i in [1 .. 20] | Tuple(i) /= i) then
+
+      Log_Error(["Tuple former failed!",
+                 "Tuple = "+str(Tuple)]);
+
+   end if;
+
+   Tuple := om;
+
+   --
+   --  Test a few applications.  We don't test this very thoroughly since
+   --  we generate the same code for each operator and we've already
+   --  tested iterations.
+   --
+
+   if +/{1 .. 50} /= 1275 then
+
+      Log_Error(["Application failed!",
+                 "Result = "+str(+/{1 .. 50})]);
+
+   end if;
+
+   if 50 +/{1 .. 50} /= 1325 then
+
+      Log_Error(["Application failed!",
+                 "Result = "+str(50 +/{1 .. 50})]);
+
+   end if;
+
+   Set := {1 .. 50};
+
+   if +/Set /= 1275 then
+
+      Log_Error(["Application failed!",
+                 "Result = "+str(+/Set)]);
+
+   end if;
+
+   if 50 +/Set /= 1325 then
+
+      Log_Error(["Application failed!",
+                 "Result = "+str(50 +/Set)]);
+
+   end if;
+
+   --
+   --  Test quantifier expressions.
+   --
+
+   Set := {1 .. 50};
+
+   if not (forall i in Set | i < 101) then
+
+      Log_Error("Forall failed!");
+
+   end if;
+
+   if forall i in Set | i < 50 then
+
+      Log_Error("Forall failed!");
+
+   end if;
+
+   if not (exists i in Set | i < 2) then
+
+      Log_Error("Exists failed!");
+
+   end if;
+
+   if exists i in Set | i > 50 then
+
+      Log_Error("Exists failed!");
+
+   end if;
+
+   End_Test;
+
+end test_program;

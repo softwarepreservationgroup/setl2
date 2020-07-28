@@ -1,0 +1,12 @@
+/usr/local/bin/stll -c setl2.lib
+#basics
+/usr/local/bin/stlc setl_packages/basics/random_pak.stl
+/usr/local/bin/stlc setl_packages/native_packages/string_utility_pak.stl
+/usr/local/bin/stlc setl_packages/basics/red_string_utility_pak.stl
+/usr/local/bin/stlc setl_packages/basics/get_lines_pak.stl
+/usr/local/bin/stlc setl_packages/basics/sort_pak.stl
+#native
+/usr/local/bin/stlc setl_packages/native_packages/stringm_pak.stl
+/usr/local/bin/stlc setl_packages/native_packages/parser_pak.stl
+/usr/local/bin/stlc setl_packages/native_packages/zip_pak.stl
+##

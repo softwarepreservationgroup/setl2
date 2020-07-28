@@ -1,0 +1,8 @@
+
+*** Abnormal End -- source file => 08.stl
+                    line   => 7
+                    column => 9
+
+Loss of significance in integer conversion:
+Real => real: 5.5000000000e+20
+

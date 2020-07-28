@@ -1,0 +1,246 @@
+-- ==================================================================
+--
+--  Package and Procedure Test
+--  ==========================
+--
+--  This program tests a variety of procedures and packages.  We try to
+--  verify procedure pointers, recursion, and name hiding, among other
+--  things.
+--
+
+package module1;
+
+   const The := "the";
+
+   var   Fox := "fox";
+
+   procedure Return_The;
+
+   procedure Return_Quick;
+
+   procedure Return_Jumped;
+
+   procedure Echo_Even(Junk1,Good1,Junk2,Good2,Junk3,Good3);
+
+end module1;
+
+package body module1;
+
+   procedure Return_The;
+
+      return "Oops!";
+
+   end Return_The;
+
+   --
+   --  Try a recursive procedure.
+   --
+
+   procedure Return_Quick;
+
+      return Return_Value("","kciuq");
+
+      procedure Return_Value(start,flipped);
+
+         if flipped = "" then
+            return start;
+         else
+            return Return_Value(start + flipped(#flipped),
+                                flipped(1 .. #flipped - 1));
+         end if;
+
+      end Return_Value;
+
+   end Return_Quick;
+
+   procedure Return_Jumped;
+
+      return "jumped";
+
+   end Return_Jumped;
+
+   procedure Echo_Even(Junk1,Good1,Junk2,Good2,Junk3,Good3);
+
+      return Good1+" "+Good2+" "+Good3;
+
+   end Echo_Even;
+
+end module1;
+
+package module2;
+
+   var Fox := "Oops!";
+
+   procedure Return_The;
+
+   procedure Echo(In_String);
+
+end module2;
+
+package body module2;
+
+   procedure Return_The;
+
+      return "The";
+
+   end Return_The;
+
+   procedure Echo(In_String);
+
+      return In_String;
+
+   end Echo;
+
+end module2;
+
+program test_program;
+
+   use Test_Common, module1, module2;
+
+   var   Error_Count      := 0;
+
+   Begin_Test("Procedure test");
+
+   Proc_Ptr := Return_Jumped;
+
+   Result := module2.Return_The() + " " +
+             Return_Quick() + " " +
+             Return_Brown() + " " +
+             module1.Fox + " " +
+             Proc_Ptr() + " " +
+             Echo("over") + " " +
+             Echo_Even(1,"the",2,"lazy",3,"dog");
+
+   if Result /= "The quick brown fox jumped over the lazy dog" then
+
+      Log_Error(["Package or procedure error",
+                 "Result = "+str(Result)]);
+
+   end if;
+
+   Result := Unwrap(Try_Closure());
+
+   if Result /= "one two three four five " then
+
+      Log_Error(["Closure error",
+                 "Result = "+str(Result)]);
+
+   end if;
+
+   End_Test;
+
+   --
+   --  Try some deeply nested procedures.
+   --
+
+   procedure Return_Brown;
+
+      return Return_Brow() + "n";
+
+      procedure Return_Brow;
+      
+         return Return_Bro() + "w";
+
+         procedure Return_Bro;
+
+            return Return_Br() + "o";
+
+            procedure Return_Br;
+
+               return Return_B() + "r";
+
+               procedure Return_B;
+
+                  return "b";
+
+               end Return_B;
+
+            end Return_Br;
+
+         end Return_Bro;
+
+      end Return_Brow;
+
+   end Return_Brown;
+
+   --
+   --  Unravel a tuple of procedures
+   --
+
+   procedure Unwrap(T);
+
+      if is_string(T) then
+
+         return T + " ";
+
+      elseif is_procedure(T) then
+
+         return Unwrap(T());
+
+      elseif is_tuple(T) then
+
+         return +/[Unwrap(x) : x in T];
+
+      else
+
+         return str(T) + " ";
+
+      end if;
+
+   end Unwrap;
+
+   --
+   --  Build a tuple of procedures, dependant on closures
+   --
+
+   procedure Try_Closure;
+
+      var Save1,Save2,Save3,Save4,Save5;
+
+      Save1 := "one";
+      Save2 := "two";
+      Save3 := "three";
+      Save4 := "four";
+      Save5 := "five";
+
+      return [Level2_A(Save1),
+              Level2_A(Save2),
+              Level2_B,
+              Level2_C(Save4,Save5)];
+
+      procedure Level2_A(Seed);
+
+         return lambda;
+                   return Seed;
+                end lambda;
+
+      end Level2_A;
+
+      procedure Level2_B;
+
+         return Save3;
+
+      end Level2_B;
+
+      procedure Level2_C(Seed1,Seed2);
+
+         var Save2_C;
+
+         Save2_C := Seed1;
+
+         return [Level3_C,
+                 lambda;
+                    return Seed2;
+                 end lambda ];
+
+         procedure Level3_C;
+
+            return Save2_C;
+
+         end Level3_C;
+
+      end Level2_C;
+
+   end Try_Closure;
+
+end test_program;

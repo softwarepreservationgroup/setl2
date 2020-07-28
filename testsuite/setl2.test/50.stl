@@ -1,0 +1,124 @@
+-- ===============================================================
+
+--
+--  More Set Operations Test
+--  ========================
+--
+--  This file is intended to test some new set operations added to SETL2.
+--
+
+program test_program;
+
+   use Test_Common;
+
+   var Test_Sets := { char(x) : x in [abs("a") .. abs("z")]}  +
+                    { {1 .. x} : x in {1 .. 10}} +
+                    { {1 .. 10}, pow({1 .. 5}) };
+
+   Begin_Test("Set operations test");
+
+   --
+   --  Test in.
+   --
+
+   for Test in Test_Sets loop
+
+     for Element in Test loop
+   
+       if Element notin Test then 
+       
+          Log_Error(["Set IN failed!",
+	               "Test = "+ str(Test), 
+	               "Element = "+ str(Element)]);
+          continue;
+        end if;
+     
+     end loop; 	
+ 
+   end loop;
+   
+   --
+   --  Test =, /=, <, >, <=, and >=.
+   --
+
+   for k in [1..30] loop
+
+      Set1 :=   { char(x) : x in [abs("a") .. abs("z")]}  +
+                { x : x in [-k .. k]} +
+                { float(x) : x in [-k..k] };
+   
+      Set2 :=   { char(x) : x in [abs("a") .. abs("z")]} +
+                { x : x in [-k .. k]} +
+                { float(x) : x in [-k..k] };
+
+      Set3 :=   { char(x) : x in [abs("a") .. abs("z")]} +
+                { x : x in [-k .. k+1]} +
+                { float(x) : x in [-k..k+1] };
+          
+      if not (Set1 = Set2) then
+
+         Log_Error(["= failed!",
+                    "Set1 = "+ str(Set1),
+                    "Set2 = "+ str(Set2)]);
+
+      end if;
+
+      if  Set1 /= Set2 then
+
+         Log_Error(["/=  failed!",
+                    "Set1 = "+ str(Set1),
+                    "Set2 = "+ str(Set2)]);
+
+      end if;
+	
+
+      if not  (Set1 <= Set2) and not (Set1 >= Set2) then
+
+         Log_Error(["<= or >= failed!",
+                    "Set1 = "+ str(Set1),
+                    "Set2 = "+ str(Set2)]);
+
+      end if;
+
+      if not  (Set3 > Set1) and not (Set3 > Set2) then
+
+         Log_Error(["> failed!",
+                    "Set1 = "+ str(Set1),
+                    "Set2 = "+ str(Set2),
+                    "Set3 = "+ str(Set3)]);
+
+      end if;
+
+      if not  (Set3 >= Set1) and not (Set3 >= Set2) then
+
+         Log_Error([">= failed!",
+                    "Set1 = "+ str(Set1),
+                    "Set2 = "+ str(Set2),
+                    "Set3 = "+ str(Set3)]);
+
+      end if;
+
+      if not  (Set1 < Set3) and not (Set2 < Set3) then
+
+         Log_Error(["< failed!",
+                    "Set1 = "+ str(Set1),
+                    "Set2 = "+ str(Set2),
+                    "Set3 = "+ str(Set3)]);
+
+      end if;
+
+      if not  (Set1 <= Set3) and not (Set2 <= Set3) then
+
+         Log_Error(["<= failed!",
+                    "Set1 = "+ str(Set1),
+                    "Set2 = "+ str(Set2),
+                    "Set3 = "+ str(Set3)]);
+
+      end if;
+
+   end loop;
+
+
+End_Test;
+
+end test_program;

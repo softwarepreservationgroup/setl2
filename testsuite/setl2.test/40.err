@@ -1,0 +1,7 @@
+
+*** Abnormal End -- source file => /local/aurelio/cvsroot/setl/testsuite/setl2.test/40.stl
+                    line   => 25
+                    column => 14
+
+Instance variable PUBLIC is not visible outside class CLASS_U
+

@@ -1,0 +1,70 @@
+native package string_utility_pak;
+				
+				-- ************ general string utilities  ************
+				
+	procedure breakup(obj,chars);				-- break string into tuple at any occurence of a c in chars. 
+												-- works recursively on tuples of strings, etc.
+	procedure join(tuple,chars);				-- joins tuple of strings into string by inserting "chars' between
+	procedure single_out(obj,chars);			-- break string into tuple by separating occurence of a c in chars
+												-- into singletons.  works recursively on tuples of strings, etc.
+	procedure segregate(obj,chars);				-- break string into tuple by separating runs of c's in chars
+												-- from nonruns.  works recursively on tuples of strings, etc.
+	procedure keep_chars(string,chars);  		-- suppress chars of string that are not in 'chars'
+	procedure suppress_chars(string,chars); 	-- suppress chars of string that are 'chars'
+	procedure case_change(string,mode); 		-- capitalize if mode is "lu"; decapitalize if mode is "ul"; 
+
+	procedure hexify(stg);					-- converts string to its hex representation
+	
+				
+				-- ************ operations on flat strings  ************
+	
+	procedure flat_create(len); 				-- creates a flat-string object, as a flat C-type buffer of specified length
+	procedure flat_len(obj); 					-- returns the length (in characters) of a flat-string object
+	procedure flat_to_setl(obj); 				-- converts a flat-string object to the SETL string with the same characters
+	procedure flat_from_setl(string); 			-- converts a SETL string to the flat-string object with the same characters
+	
+	procedure flat_clone(obj); 					-- returns copy of a flat-string object (as flat-string object)
+	procedure flat_add(obj1,obj2); 				-- returns concatenation of two flat-string objects (as flat-string object)
+	procedure flat_reverse(obj); 				-- returns reverse of a flat-string object (as flat-string object)
+	procedure flat_slice(obj,i,j); 				-- returns indicated slice of a flat-string object (as flat-string object)
+	procedure flat_slice_end(obj,i); 			-- returns indicated tail slice of a flat-string object (as flat-string object)
+	procedure flat_set_slice(obj,i,obj2); 		-- sets indicated slice of a flat-string object (from another flat-string object,  in  place)
+	procedure flat_slices_to_setl(flat_string,starting_position,flat_template);
+	procedure flat_slices_to_setl_tup(flat,start,template,n); -- n-fold iteration of prior; returns tuple of tuples
+-- 		Breaks out a sequence of substrings from a flat string and converts them to
+-- 		SETL, returning a SETL tuple value. 'template' is a flat string of n
+-- 		two-byte substrings specifying the fields wanted and the manner of conversion.
+--		each two_byte field specifies field_size,conversion_code, according to the following table
+		
+-- 		0: skip field (absent in output)
+-- 		1: convert to unsigned integer string
+-- 		2: convert to unsigned SETL integer
+-- 		3: convert to signed integer string (the integer is in offset binary representation)
+-- 		4: convert to signed integer (the integer is in offset binary representation)
+-- 		5: convert to unsigned floating string (2 digits precision)
+-- 		6: convert to unsigned SETL float (2 digits precision)
+-- 		7: convert to signed floating string (the integer is in offset binary representation; 2 digits precision)
+-- 		8: convert to signed SETL float (the integer is in offset binary representation; 2 digits precision)
+--		9: convert integer day number to date string of format 1900-01-01 (yyyy-mm-dd) base date n = 1 is 1900-01-01
+--		10: no conversion: return raw string
+
+	procedure flat_translate(obj,map); 			-- translates characters of flat-string object, returns result  
+	procedure flat_reverse_translate(obj,map); 	-- 
+	
+	procedure flat_set_char(obj,i,c); 			-- sets indicated character of a flat-string object (from SETL char)
+												-- returns result (as flat-string object)
+	procedure flat_get_char(obj,i); 			-- gets indicated character of a flat-string object (as SETL char)
+	
+	procedure flat_translate_all(obj,off,minlen,codestr,rar); 		--  
+	procedure flat_file_get(filename,start_char,end_char); 			-- 
+	procedure flat_file_put(filename,start_char,obj); 				-- 
+	
+	procedure flat_match_scores(obj1,obj2,off,repeats); 			-- 
+	
+	procedure flat_toto_prepare(flats); 		-- 
+	procedure flat_toto_print(obj); 			-- 
+	procedure flat_toto_clear(obj); 			-- 
+	procedure flat_toto_match(obj,stg,maxnumber); 					-- 
+	
+
+end string_utility_pak;

@@ -1,0 +1,29 @@
+program ext;
+use string_utility_pak;
+    
+a:="á~!@$%&\\'£¢°¤¦¥º¶ÆÂµ¿¹§ ·Å´½à±¸×";
+names:=breakup("_SMALLDOT _TILDE _BANG _AT _DOLL _PERCENT _AMP _BACKSL _APOS _BRITPOUND _CENT _INFIN _PARA "+
+    "_NOTE _DOT _INTEGRAL _DIFF _DELT _NTSGN _MU _THORN _SMALLPI _BETA _DAGGER _SIGMA _APPROXE "+
+    "_YEN _OMEGA _GRCROSS _PLMIN _PI _DIAMOND"," ");
+    
+keys:=breakup("shift-option-9 ~ ! @ $ % & \\ ' option-3 option-4 option-5 option-6 option-7 "+
+	"option-8 option-b option-d option-j option-l option-m option-o option-p option-s option-t option-w option-x option-y option-z shift-option-7 shift-option-= shift-option-P shift-option-V"," ");
+map:={};
+for t in [1..#a] loop
+	print(a(t)," ",names(t),"  ",abs(a(t))," -> ",keys(t));
+	map(abs(a(t))):="\""+names(t)+"\"";
+end loop;
+print("----------------------------------");
+
+for t in [1..#a] loop
+	print("case ",abs(a(t)),":  /* ",keys(t)," */");
+end loop;
+
+for t in [0..255] loop
+  m:=map(t);
+  if (m=om) then
+  	  m:="NULL";
+  end if;
+  print("   ",m,", ");
+end loop;
+end;

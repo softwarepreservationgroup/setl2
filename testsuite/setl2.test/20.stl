@@ -1,0 +1,468 @@
+-- =======================================================================
+--
+--  Tuple Operations Test
+--  =====================
+--
+--
+--  This file is intended to test the tuple operations described
+--  on pages 68-73 of "Programming With Sets: An Introduction to SETL".
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("Tuple operations test");
+
+   Test_Tuples := { [char(x) : x in [abs("a") .. abs("z")]] } +
+                  { [1 .. x] : x in {1 .. 20}} +
+                  { [1 .. 150], [],
+                    [1, om, om, om, om, om, om, om, om, om, om, 1] };
+
+   Temp := ["This"];
+   Temp(50) := "is";
+   Temp(100) := "it!";
+   Test_Tuples with:= Temp;
+   
+   --
+   --  Test concatenation.
+   --
+
+   for Left in Test_Tuples, Right in Test_Tuples loop
+
+      Sum := Left + Right;
+
+      if #Sum /= #Left + #Right then
+
+         Log_Error(["Concatenation failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Sum = "+str(Sum)]);
+
+         continue;
+
+      end if;
+
+      for i in [1 .. #Left] loop
+
+         if Left(i) /= Sum(i) then
+
+            Log_Error(["Concatenation failed!",
+                       "Left = "+str(Left),
+                       "Right = "+str(Right),
+                       "Sum = "+str(Sum)]);
+
+            continue;
+
+         end if;
+
+      end loop;
+
+      for i in [1 .. #Right] loop
+
+         if Right(i) /= Sum(#Left + i) then
+
+            Log_Error(["Concatenation failed!",
+                       "Left = "+str(Left),
+                       "Right = "+str(Right),
+                       "Sum = "+str(Sum)]);
+
+            continue;
+
+         end if;
+
+      end loop;
+
+   end loop;
+ 
+   --
+   --  Test multiple concatenation.
+   --
+
+   for Left in Test_Tuples, Right in [1, 51 .. 300] |
+      #Left * Right < 1500 loop
+
+      Sum := Left * Right;
+
+      if #Sum /= #Left * Right then
+
+         Log_Error(["Multiple concatenation failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Sum = "+str(Sum)]);
+
+         continue;
+
+      end if;
+
+      if Sum /= Right * Left then
+
+         Log_Error(["Multiple concatenation failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Sum = "+str(Sum)]);
+
+         continue;
+
+      end if;
+
+      for i in [1 .. Right] loop
+
+         for j in [1 .. #Left] loop
+
+            if Sum((i - 1) * #Left + j) /= Left(j) then
+
+               Log_Error(["Multiple concatenation failed!",
+                          "Left = "+str(Left),
+                          "Right = "+str(Right),
+                          "Sum = "+str(Sum)]);
+
+               continue;
+
+            end if;
+
+         end loop;
+
+      end loop;
+
+   end loop;
+ 
+   --
+   --  Test with.
+   --
+
+   for Test in Test_Tuples loop
+
+      Sum := Test with "new";
+
+      if #Sum /= #Test + 1 then
+
+         Log_Error(["With failed!",
+                    "Test = "+str(Test),
+                    "Sum = "+str(Sum)]);
+
+         continue;
+
+      end if;
+
+      if Sum(#Sum) /= "new" then
+
+         Log_Error(["With failed!",
+                    "Test = "+str(Test),
+                    "Sum = "+str(Sum)]);
+
+         continue;
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test in.
+   --
+
+   for Test in Test_Tuples loop
+
+      for Element in Test loop
+
+         if Element notin Test then
+
+            Log_Error(["In failed!",
+                       "Test = "+str(Test),
+                       "Element = "+str(Element)]);
+
+            continue;
+
+         end if;
+
+      end loop;
+
+      if "junk" in Test then
+
+         Log_Error(["In failed!",
+                    "Test = "+str(Test),
+                    "Element = "+str(Element)]);
+
+         continue;
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test indexing.
+   --
+
+   for Test in Test_Tuples loop
+
+      Rebuilt_Tuple := [];
+    
+      for i in [1 .. #Test] loop
+
+         Rebuilt_Tuple(i) := Test(i);
+
+      end loop;
+
+      if Rebuilt_Tuple /= Test then
+
+         Log_Error(["Indexing or concatenation failed!",
+                    "Test = "+str(Test),
+                    "Rebuilt_Tuple = "+str(Rebuilt_Tuple)]);
+
+      end if;
+
+      if Test(#Test + 1) /= om then
+
+         Log_Error(["Indexing failed!",
+                    "Test = "+str(Test),
+                    "Test(<end>) = "+str(Test(#Test + 1))]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test slice.
+   --
+
+   for Test in Test_Tuples loop
+
+      for i in [1 .. #Test] loop
+
+         for j in [i .. #Test] loop
+
+            Slice := Test(i .. j);
+
+            k := j;
+
+            while k > i - 1 and Test(k) = om loop
+
+               k -:= 1;
+
+            end loop;
+
+            if #Slice /= k - i + 1 then
+
+               Log_Error(["Slice failed!",
+                          "Test = "+str(Test),
+                          "Test("+str(i), ".. "+str(j), ") = ",  Slice]);
+
+            end if;
+            
+            for k in [1 .. #Slice] loop
+
+               if Slice(k) /= Test(i + k - 1) then
+
+                  Log_Error(["Slice failed!",
+                             "Test = "+str(Test),
+                             "Test("+str(i)+" .. "+str(j)+") = "+str(Slice)]);
+
+                  exit;
+
+               end if;
+            
+            end loop;
+
+            for k in [1 .. #Slice] loop
+
+               if Slice(k + 1 .. k) /= [] then
+
+                  Log_Error(["Slice failed!",
+                             "Test = "+str(Test),
+                             "Test("+str(i)+" .. "+str(j)+") = "+str(Slice),
+                             "Slice(<tail>) = "+str(Slice(k + 1 .. k))]);
+
+                  exit;
+                
+               end if;
+
+            end loop;
+            
+         end loop;
+
+      end loop;
+
+   end loop;
+
+   --
+   --  Test tail (end).
+   --
+
+   for Test in Test_Tuples loop
+
+      for i in [1 .. #Test] loop
+
+         Slice := Test(i ..);
+
+         if #Slice /= #Test - i + 1 then
+
+            Log_Error(["Slice failed!",
+                       "Test = "+str(Test),
+                       "Test("+str(i)+" .. ) = "+str(Slice)]);
+
+         end if;
+            
+         for k in [1 .. #Slice] loop
+
+            if Slice(k) /= Test(i + k - 1) then
+
+               Log_Error(["Slice failed!",
+                          "Test = "+str(Test),
+                          "Test("+str(i)+" .. ) = "+str(Slice)]);
+
+               exit;
+
+            end if;
+            
+         end loop;
+
+         if Slice(#Slice + 1 ..) /= [] then
+
+            Log_Error(["Slice failed!",
+                       "Test = "+str(Test),
+                       "Test("+str(i)+" .. ) = "+str(Slice),
+                       "Slice(<tail>) = "+str(Slice(#Slice + 1 ..))]);
+
+         end if;
+            
+      end loop;
+
+   end loop;
+
+   --
+   --  Test sinister assignment.
+   --
+
+   for Test in Test_Tuples loop
+
+      for i in [1 .. #Test] loop
+
+         Result := Test;
+         Result(i) := "new junk";
+
+         if #Result /= #Test then
+
+            Log_Error(["Sinister assignment failed!",
+                       "Test = "+str(Test),
+                       "Result = "+str(Result)]);
+
+         end if;
+            
+         if Result(i) /= "new junk" then
+
+            Log_Error(["Sinister assignment failed!",
+                       "Test = "+str(Test),
+                       "Result = "+str(Result)]);
+
+         end if;
+            
+         if exists j in {1 .. #Test} - {i} | Result(j) /= Test(j) then
+
+            Log_Error(["Sinister assignment failed!",
+                       "Test = "+str(Test),
+                       "Result = "+str(Result)]);
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   --
+   --  Test slice assignment.
+   --
+
+   for Test in Test_Tuples loop
+
+      for i in [1 .. #Test + 1] loop
+
+         for j in [i - 1 .. #Test] loop
+
+            Result := Test;
+            Slice := [1, om, om, om, 1];
+            Result(i .. j) := Slice;
+
+            if #Result /= #Test - j + i - 1 + #Slice then
+ 
+               Log_Error(["Slice assignment failed!",
+                          "Test = "+str(Test),
+                          "Result = "+str(Result)]);
+
+            end if;
+
+            if exists k in [1 .. i - 1] | Result(k) /= Test(k) then
+ 
+               Log_Error(["Slice assignment failed!",
+                          "Test = "+str(Test),
+                          "Result = "+str(Result)]);
+
+            end if;
+
+            if exists k in [1 .. #Slice] |
+                   Result(i + k - 1) /= Slice(k) then
+ 
+               Log_Error(["Slice assignment failed!",
+                          "Test = "+str(Test),
+                          "Result = "+str(Result)]);
+
+            end if;
+
+            if exists k in [1 .. #Test - j] |
+                      Result(i + #Slice + k - 1) /= Test(j + k) then
+ 
+               Log_Error(["Slice assignment failed!",
+                          "Test = "+str(Test),
+                          "Result = "+str(Result)]);
+
+            end if;
+
+         end loop;
+
+      end loop;
+
+   end loop;
+
+   --
+   --  Test tail (end) assignment.
+   --
+
+   for Test in Test_Tuples loop
+
+      for i in [1 .. #Test + 1] loop
+
+         Result := Test;
+         Slice := [1, om, om, om, 1];
+         Result(i ..) := Slice;
+
+         if #Result /= i - 1 + #Slice then
+ 
+            Log_Error(["Tail assignment failed!",
+                       "Test = "+str(Test),
+                       "Result = "+str(Result)]);
+
+         end if;
+
+         if exists k in [1 .. i - 1] | Result(k) /= Test(k) then
+ 
+            Log_Error(["Tail assignment failed!",
+                       "Test = "+str(Test),
+                       "Result = "+str(Result)]);
+
+         end if;
+
+         if exists k in [1 .. #Slice] |
+                Result(i + k - 1) /= Slice(k) then
+ 
+            Log_Error(["Tail assignment failed!",
+                       "Test = "+str(Test),
+                       "Result = "+str(Result)]);
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   End_Test;
+
+end test_program;

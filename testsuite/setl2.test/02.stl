@@ -1,0 +1,258 @@
+program test_program;
+
+   use Test_Common;
+
+   const Small_Numbers    := {-10 .. 10},
+         Border_Numbers   := {-32775 .. -32760} + {32760 .. 32775},
+         Big_Numbers      := {12345678901234567890,
+                              98765432109876543210,
+                              555555555555555555555555555555555555555555,
+                              -12345678901234567890,
+                              -98765432109876543210,
+                              -555555555555555555555555555555555555555555};
+
+   Begin_Test("Integer operations test");
+
+   --
+   --  Test addition and subtraction against each other.
+   --
+
+   Left_Test_Set := Right_Test_Set :=
+         Small_Numbers + Border_Numbers + Big_Numbers;
+
+   for Left in Left_Test_Set, Right in Right_Test_Set loop
+
+      Sum := Left + Right;
+
+      if Left /= Sum - Right then
+	
+         Log_Error(["Add or subtract failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Sum = "+str(Sum),
+                    "Sum - Right = "+str(Sum - Right)]);
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test multiplication and division against each other.
+   --
+
+   Left_Test_Set   := Small_Numbers + Border_Numbers + Big_Numbers;
+   Right_Test_Set  := Left_Test_Set - {0};
+
+   for Left in Left_Test_Set, Right in Right_Test_Set loop
+
+      Sum := Left * Right;
+
+      if Left /= Sum / Right then
+         Log_Error(["Multiply or divide failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Sum = "+str(Sum),
+                    "Sum / Right = "+str(Sum / Right)]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test exponentiation against multiplication.
+   --
+
+   Left_Test_Set   := Small_Numbers + Border_Numbers + Big_Numbers;
+   Right_Test_Set  := {3,5,35};
+
+   for Left in Left_Test_Set, Right in Right_Test_Set loop
+
+      Power := 1;
+
+      for i in {1 .. Right} loop
+
+         Power *:= Left;
+
+      end loop;
+
+      if Left ** Right /= Power then
+          Log_Error(["Exponentiation failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Power = "+str(Power),
+                    "Result = "+str(Left ** Right)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  This is very slow, but I really should test at least one instance
+   --  where the power is a long integer.
+   --
+
+   Left   := 2;
+   Right  := 20000;
+   Power  := 1;
+
+   for i in {1 .. Right} loop
+
+      Power *:= Left;
+
+   end loop;
+
+   if Left ** Right /= Power then
+      Log_Error(["Exponentiation failed!",
+                 "Left = "+str(Left),
+                 "Right = "+str(Right),
+                 "Power = "+str(Power),
+                 "Result = "+str(Left ** Right)]);
+
+   end if;
+
+   Power := om;
+
+   --
+   --  One more very slow test: we can check digit by digit.
+   --
+
+   Power_String := str(100**2000);
+
+   if #Power_String /= 4001  or
+         Power_String(1) /= "1" or 
+         (exists i in {2 .. #Power_String} | Power_String(i) /= "0") then
+  
+		print("Exponentiation or STR failed!\n"); 
+      Log_Error(["Exponentiation or STR failed!",
+                 "#Power_String = "+str(#Power_String)]);
+
+   end if;
+
+   Power_String := om;
+ 
+   --
+   --  Test multiplication, division and mod against each other.
+   --
+
+   Left_Test_Set   := Small_Numbers + Border_Numbers + Big_Numbers;
+   Right_Test_Set  := Left_Test_Set - {0};
+
+   for Left in Left_Test_Set, Right in Right_Test_Set loop
+
+      Remainder := Left mod Right;
+      Quotient  := Left / Right;
+
+      if Remainder = 0 then
+
+         if Left /= Quotient * Right then		
+            Log_Error(["Multiply, divide or mod failed!",
+                       "Left = "+str(Left),
+                       "Right = "+str(Right),
+                      "Remainder = "+str(Remainder),
+                       "Quotient = "+str(Quotient),
+                       "Result = "+str(Quotient * Right)]);
+
+         end if;
+
+      elseif Left >= 0 and Right >= 0 then
+
+         if Left /= Quotient * Right + Remainder then
+
+		
+            Log_Error(["Multiply, divide or mod failed!",
+                       "Left = "+str(Left),
+                       "Right = "+str(Right),
+                       "Remainder = "+str(Remainder),
+                       "Quotient = "+str(Quotient),
+                       "Result = "+str(Quotient * Right + Remainder)]);
+
+         end if;
+
+      elseif (Left < 0 and Right >= 0) then
+
+         if Left /= Quotient * Right + Remainder - Right then
+
+            Log_Error(["Multiply, divide or mod failed!",
+                       "Left = "+str(Left),
+                       "Right = "+str(Right),
+                       "Remainder = "+str(Remainder),
+                       "Quotient = "+str(Quotient),
+                       "Result = "+str(Quotient * Right +
+                                       Remainder - Right)]);
+
+          end if;
+
+       elseif (Left >= 0 and Right < 0) then
+
+          if Left /= Quotient * Right - Remainder - Right then
+
+            Log_Error(["Multiply, divide or mod failed!",
+                       "Left = "+str(Left),
+                       " Right = "+str(Right),
+                       " Remainder = "+str(Remainder),
+                       " Quotient = "+str(Quotient),
+                       " Result = "+str(Quotient * Right -
+                                        Remainder - Right)]);
+
+         end if;
+
+      elseif (Left < 0 and Right < 0) then
+
+         if Left /= Quotient * Right - Remainder then
+
+            Log_Error(["Multiply, divide or mod failed!",
+                       "Left = "+str(Left),
+                       "Right = "+str(Right),
+                       "Remainder = "+str(Remainder),
+                       "Quotient = "+str(Quotient),
+                       "Result = "+str(Quotient * Right - Remainder)]);
+
+         end if;
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test absolute value and unary minus against each other.
+   --
+
+   Test_Set   := Small_Numbers + Border_Numbers + Big_Numbers;
+
+   for Test in Test_Set loop
+
+      if (Test < 0 and abs(Test) /= -Test) or
+         (Test >= 0 and abs(Test) /= Test) then
+
+         Log_Error(["ABS or unary minus failed!",
+                    "Test = "+str(Test),
+                    "-Test = "+str(-Test),
+                    "ABS(Test) = "+str(abs(Test))]);
+
+      end if;
+
+   end loop;
+ 
+   --
+   --  Test mod, even, and odd against each other.
+   --
+
+   Test_Set   := Small_Numbers + Border_Numbers + Big_Numbers;
+
+   for Test in Test_Set loop
+
+      if (Test mod 2 = 0 and not even(Test)) or
+         (Test mod 2 = 1 and not odd(Test)) then
+
+         Log_Error(["Mod, even, or odd failed!",
+                    "Test = "+str(Test),
+                    "Test mod 2 = "+str(Test mod 2),
+                    "even(Test) = "+str(even(Test)),
+                    "odd(Test) = "+str(odd(Test))]);
+
+      end if;
+
+   end loop;
+ 
+   End_Test;
+
+end test_program;

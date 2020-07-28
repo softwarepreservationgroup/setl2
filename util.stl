@@ -1,0 +1,400 @@
+--
+--  SETL2 TEST SUITE
+--  ================
+--
+--  This file contains a package and a program which are used in the
+--  self-checking test suite for SETL2.  The package contains utility
+--  procedures and data used within the test programs, and the program is
+--  used to split the source files in the test suite.
+--
+
+package Test_Common;
+
+   -- system file names
+
+   const State_File_Name      := "_ttstate",
+         Suite_File_Name      := "_ttsuite.stl",
+         Source_File_Name     := "_tttest.stl",
+         Stderr_Name          := "_ttstd.err",
+         Stdout_Name          := "_ttstd.out",
+         Done_Flag_File_Name  := "_ttdone",
+         Log_File_Name        := "test.log",
+         Error_File_Name      := "error.log";
+
+   -- saved data (saved across program executions)
+
+   var Source_Number,
+       Source_Line,
+       File_Error_Count,
+       Total_Error_Count,
+       Abend_Flag;
+
+   -- exported procedures
+
+   procedure Begin_Test(Header);
+   procedure End_Test;
+   procedure Log_Status(Message);
+   procedure Log_Error(Message);
+   procedure Verify_Abend(Flag,Search_String);
+   procedure Save_State;
+   procedure Restore_State;
+   
+end Test_Common;
+
+package body Test_Common;
+
+   --
+   --  This procedure is called at the beginning of each test program.
+   --  It restores the static variables and prints a banner.
+   --
+
+   procedure Begin_Test(Header);
+
+      var Log_File;
+
+      Restore_State;
+
+      Log_File := open(Log_File_Name,"text-append");
+
+      printa(Log_File,"File: ",lpad(str(Source_Number),3)," => ",Header);
+
+      File_Error_Count := 0;
+      Abend_Flag := 1;
+      Save_State;
+
+      close(Log_File);
+
+   end Begin_Test;
+
+   --
+   --  This procedure is called at the end of each test program.  It
+   --  summarizes the errors and saves the static variables.
+   --
+
+   procedure End_Test;
+
+      var Log_File;
+
+      Log_File := open(Log_File_Name,"text-append");
+
+      if File_Error_Count = 0 then
+         printa(Log_File,"             No Errors!");
+      else
+         printa(Log_File,"             ",File_Error_Count," Errors!");
+      end if;
+
+      Total_Error_Count +:= File_Error_Count;
+      Abend_Flag := 0;
+      Save_State;
+
+      close(Log_File);
+
+   end End_Test;
+
+   --
+   --  This procedure writes a message in the log file.  It should not be
+   --  an error message, as it will not be counted as an error.
+   --
+
+   procedure Log_Status(Message);
+
+      var Log_File;
+
+      Log_File := open(Log_File_Name,"text-append");
+      printa(Log_File,"             ",Message);
+
+      close(Log_File);
+
+   end Log_Status;
+
+   --
+   --  This procedure writes a message in the error file.  It should be
+   --  an error message, as it will be counted as an error.
+   --
+
+   procedure Log_Error(Message);
+	
+    	var Error_Message;
+
+
+    	if is_string(Message) then
+        	Message := [Message];
+    	end if;
+    	Error_Message fromb Message;
+	print("File: ",lpad(str(Source_Number),3)," Line: ",lpad(str(Source_Line),5)," => ",Error_Message);
+
+      while #Message > 0 loop
+
+         Error_Message fromb Message;
+         print("                         ",Error_Message);
+
+      end loop;
+
+      File_Error_Count +:= 1;
+
+   end Log_Error;
+
+   --
+   --  This procedure determines whether the previous program terminated
+   --  correctly.  It checks for abnormal ends (assuming the previous
+   --  program called begin_test and end_test) and checks the text in
+   --  error files.
+   --
+
+   procedure Verify_Abend(Flag,Search_String);
+
+      var Stderr_File,
+          Line;
+
+      Restore_State;
+
+      if Flag /= Abend_Flag then
+         if Abend_Flag = 1 then
+           -- Log_Error("Unexpected abend!");
+		print("Unexpected abend!");	
+            print_error_file();
+         else	
+--            Log_Error("Expected abend!");
+            print("Expected abend!");
+	    print_error_file();
+         end if;
+
+         End_Test;
+         stop;
+
+      end if;
+
+      if Abend_Flag /= 1 then
+
+         End_Test;
+         stop;
+
+      end if;
+
+      if Search_String /= om then
+
+         Stderr_File := open(Stderr_Name,"text-in");
+         
+         while true loop
+
+            geta(Stderr_File,Line);
+            if eof() then
+--               Log_Error("Wrong abend Message!");
+	       print("Wrong abend Message!");
+               print_error_file();
+               exit;
+            end if;
+
+            if Search_String in Line then
+               exit;
+            end if;
+
+         end loop;
+
+         close(Stderr_file);
+
+      end if;
+      
+      End_Test;
+      stop;
+
+      procedure print_error_file;
+
+         var Stderr_File,
+             Line;
+
+         Error_Message := ["","Error File", ""];
+         Stderr_File := open(Stderr_Name,"text-in");
+            
+         while true loop
+
+            geta(Stderr_File,Line);
+            exit when eof();
+            Error_Message with:= Line;
+
+         end loop;
+
+         close(Stderr_file);
+          
+         Error_Message with:= "";
+--         Log_Error(Error_Message);
+	 print(Error_Message);
+      end print_error_file;
+
+   end Verify_Abend;
+
+   --
+   --  This procedure saves static variables in a file.
+   --
+
+   procedure Save_State;
+
+      var State_File;
+
+      State_File := open(State_File_Name, "text-out");
+      printa(State_File, Source_Number);
+      printa(State_File, Source_Line);
+      printa(State_file, File_Error_Count);
+      printa(State_file, Total_Error_Count);
+      printa(State_file, Abend_Flag);
+
+      close(State_File);
+
+   end Save_State;
+
+   --
+   --  This procedure restores static variables from a file.
+   --
+
+   procedure Restore_State;
+
+      var State_File;
+
+      if fexists(State_File_Name) then
+
+         State_File := open(State_File_Name, "text-in");
+         reada(State_File, Source_Number);
+         reada(State_File, Source_Line);
+         reada(State_File, File_Error_Count);
+         reada(State_File, Total_Error_Count);
+         reada(State_File, Abend_Flag);
+
+         close(State_File);
+
+      else
+          
+          Source_Number := 0;
+          Source_Line := 1;
+          File_Error_Count := 0;
+          Total_Error_Count := 0;
+          Abend_Flag := 0;
+
+      end if;
+
+   end Restore_State;
+
+end Test_Common;
+
+--
+--  Next_Test
+--  ---------
+--
+--  This program splits the next successive source file from the test
+--  suite.  It just reads past any files it has already produced, then
+--  copies the next file it finds.
+--
+
+program Next_Test;
+
+   use Test_Common;
+
+   var Suite_File,
+       Source_File,
+       No_More_Files,
+       Skip_Count,
+       Line,
+       Done_Flag_File;
+
+   -- reload the test status
+
+   Restore_State;
+
+   -- open the test suite
+
+   Suite_File := open(Suite_File_Name,"text-in");
+
+   -- skip previously processed files
+
+   No_More_Files := false;
+   Source_Line := 1;
+   for Skip_Count in [1 .. Source_Number] loop
+
+      while true loop
+      
+         -- get a Line, at end set Flag
+
+         geta(Suite_File,Line);
+         Source_Line +:= 1;
+         if eof() then
+            No_More_Files := true;
+            exit;
+         end if;
+
+         -- strip leading and trailing blanks
+
+         span(Line," ");
+         rspan(Line," ");
+         
+         -- file separator is a Line of all =
+
+         if #Line > 3 and Line = #Line * "=" then
+            exit;
+         end if;
+
+         -- end of file is a Line of all #
+
+         if #Line > 3 and Line = #Line * "#" then
+            No_More_Files := true;
+            exit;
+         end if;
+
+      end loop;
+   end loop;
+
+   -- if there are no more files create a dummy to signal script
+
+   if No_More_Files then
+
+      Done_Flag_File := open(Done_Flag_File_Name,"text-out");
+      printa(Done_Flag_File,"finished!");
+      close(Done_Flag_File);
+      close(Suite_File);
+      stop;
+
+   end if;
+
+   -- copy the next source file
+
+   Source_File := open(Source_File_Name,"text-out");
+   print("Extracting file ",Source_Number," at line ",Source_line);
+
+   while true loop
+  
+      -- get a Line, at end set Flag
+
+      geta(Suite_File,Line);
+      if eof() then
+         exit;
+      end if;
+      save_Line := Line;
+
+      -- strip leading and trailing blanks
+
+      span(Line," ");
+      rspan(Line," ");
+      
+      -- file separator is a Line of all =
+
+      if #Line > 3 and Line = #Line * "=" then
+         exit;
+      end if;
+
+      -- end of file is a Line of all #
+
+      if #Line > 3 and Line = #Line * "#" then
+         exit;
+      end if;
+
+      -- if we didn't find a Flag, copy Line
+
+      printa(Source_File,save_Line);
+
+   end loop;
+
+   close(Suite_File);
+   close(Source_File);
+
+   Source_Number +:= 1;
+   Save_State;
+
+end Next_Test;

@@ -1,0 +1,12 @@
+native package zip_pak;
+
+	procedure compress(string);						-- compresses a string using a variant ofthe Lempel-Ziv method 
+	procedure uncompress(string);					-- inverse of the 'compress' operation
+	procedure open_zip(file);						-- returns a 'zipobj' handle to a Zip file, used in the operations below
+	procedure list_zip(zipobj);						-- return a tuple describing  contents of a Zip file
+	procedure debug_zip(zipobj);					-- print standard Zip file contents report
+	procedure get_from_zip(zipobj,item_name);		-- extract item from Zip file, as string
+	procedure extract_from_zip(zipobj,item_name);	-- extract item from Zip file, to a file ofthe same name as item_name
+	procedure close_zip(zipobj);					-- close a Zip file handle
+
+end zip_pak;

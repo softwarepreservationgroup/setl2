@@ -1,0 +1,118 @@
+-- =================================================================
+
+--
+-- test of object stack and heaps
+-- ==============================
+--
+program test_program; 
+
+use up_heap,directable_heap,double_heap,stack,Test_Common; 
+
+const 
+ k := 10;  -- tests of any desired size
+
+Begin_Test("Heap_Object testing:"); 
+
+-- test up_heap and directable_heap 
+
+Log_Status("testing up_heap and directable_heap");
+
+heap1 := up_heap([sin(float(n)): n in [1..k]]);  
+heap2 := directable_heap([sin(float(n)): n in [1..k]],true);
+checksort(heap1,heap2,true);
+
+heap1 := heap1 with/ [sin(float(n)): n in [k + 1..2 * k]];  
+heap2 := heap2 with/ [sin(float(n)): n in [k + 1..2 * k]];
+checksort(heap1,heap2,true);
+
+heap11 := up_heap([sin(float(n)) + 3.15: n in [1..k]]);  
+heap21 := directable_heap([sin(float(n)): n in [1..k]],true);
+sorted1 := [x: x in heap11];
+sorted2 := [x + 3.15: x in heap21];
+checksort(sorted1,sorted2,true);
+
+heap1 := heap1 less/ [sin(float(n)): n in [k + 1..2 * k]]; 
+heap22 := directable_heap([sin(float(n)): n in [1..k]],true);
+checksort(heap1,heap22,true);
+
+heap2 := heap2 less/ [sin(float(n)): n in [k + 1..2 * k]]; 
+heap12 := up_heap([sin(float(n)): n in [1..k]]);
+checksort(heap1,heap12,true);
+
+-- test directable_heap  and stack
+Log_Status("testing directable_heap and stack");
+
+heapd1 := directable_heap([sin(float(n)): n in [1..k]],false); 
+heapu1 := directable_heap([sin(float(n)): n in [1..k]],true);
+sorted1 := [x: x in heapd1];
+sorted_prelim := [x: x in heapu1];
+sorted2 := [x: x in stack(sorted_prelim)];  -- reverse order
+checksort(sorted1,sorted2,false);
+
+sorted1 := [x from heapd1: n in [1..#heapd1]];
+sorted_prelim := [x from heapu1: n in [1..#heapu1]];
+sorted2 := [x: x in stack(sorted_prelim)];  -- reverse order
+checksort(sorted1,sorted2,false);
+
+heapd1 := directable_heap([sin(float(n)): n in [1..k]],false);  
+heapu1 := directable_heap([sin(float(n)): n in [1..k]],true);
+sorted1 := [ ]; sorted_prelim := [ ]; -- prepare to collected sorted lists
+
+while (x from heapd1) /= OM loop
+  sorted1 with:= x;
+end loop;
+
+while (x from heapu1) /= OM loop
+  sorted_prelim with:= x;
+end loop;
+
+sorted2 := [sorted_prelim(x): x in [#sorted_prelim,#sorted_prelim - 1..1]];
+checksort(sorted1,sorted2,false);
+
+
+-- now for a double_heap test, including a stack test
+
+Log_Status("testing double_heap and stack");
+
+heap1 := double_heap([sin(float(n)): n in [1..k]]);  
+heap2 := double_heap([sin(float(n)): n in [1..k]]);
+
+sorted_prelim := [heap2.pickmin():  n in [1..#heap2]];
+sorted2 := [sorted_prelim(x): x in [#sorted_prelim,#sorted_prelim - 1..1]];
+sorted3 := [x: x in stack(sorted_prelim)];
+checksort(heap1,sorted2,true);
+checksort(heap1,sorted3,true);
+
+
+End_Test;
+
+procedure checksort(heap1,heap2,flag);  -- checks identity of sorted tuples
+                 -- flag = true: up_heap; false: down_heap.
+if (sorted1 := [x: x in heap1]) /= (sorted2 := [x: x in heap2]) then -- test has failed
+  Log_Error(["Heap object failed! Sorted heaps of reals fail to agree:",
+             "heap1   = "+ str(heap1), 
+		 "sorted1 = "+ str(sorted1),
+             "heap2   = "+ str(heap2), 
+		 "sorted2 = "+ str(sorted2)]);
+end if;
+
+if flag then ok := forall i in [1..#sorted1-1] | sorted1(i) >= sorted1(i+1);
+else ok := forall i in [1..#sorted1-1] | sorted1(i) <= sorted1(i+1); end if;
+
+   if  not ok  then Log_Error(["Heap sort failed!",
+                               "Flag = "+ str(flag),
+					 "heap = "+ str(heap1),
+		                   "sorted = "+ str(sorted1)]);
+   end if;   
+
+if flag then ok := forall i in [1..#sorted2-1] | sorted2(i) >= sorted2(i+1);
+else ok := forall i in [1..#sorted2-1] | sorted2(i) <= sorted2(i+1); end if;
+   if   not ok   then Log_Error(["Heap sort failed!",
+                               "Flag = "+ str(flag),
+                                "heap = "+ str(heap2),
+		                    "sorted = "+ str(sorted2)]);
+   end if;   
+
+end checksort;
+
+end test_program;

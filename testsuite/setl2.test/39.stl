@@ -1,0 +1,395 @@
+-- ========================================================
+--
+--  Main test program
+--
+
+program test_program;
+
+   use test_common, object_test_pack, class_m, class_n, class_s, class_u;
+
+   begin_test("Objects test");
+
+   --
+   --  This is a really boring bunch of tests, to make sure we execute
+   --  the right methods for built-in operations.
+   --
+
+   u := class_u(1,2,3);
+
+   Callchain := [];
+   value := u+5;
+   if Callchain /= ["class_f.+","5"] or value /= "class_f.+" then
+
+      log_error(["Error in addition method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u-5;
+   if Callchain /= ["class_f.-","5"] or value /= "class_f.-" then
+
+      log_error(["Error in subtraction method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u*5;
+   if Callchain /= ["class_f.*","5"] or value /= "class_f.*" then
+
+      log_error(["Error in multiplication method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u/5;
+   if Callchain /= ["class_f./","5"] or value /= "class_f./" then
+
+      log_error(["Error in division method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u**5;
+   if Callchain /= ["class_f.**","5"] or value /= "class_f.**" then
+
+      log_error(["Error in exponentiation method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u mod 5;
+   if Callchain /= ["class_f.mod","5"] or value /= "class_f.mod" then
+
+      log_error(["Error in mod method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u min 5;
+   if Callchain /= ["class_f.min","5"] or value /= "class_f.min" then
+
+      log_error(["Error in min method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u max 5;
+   if Callchain /= ["class_f.max","5"] or value /= "class_f.max" then
+
+      log_error(["Error in max method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u with 5;
+   if Callchain /= ["class_f.with","5"] or value /= "class_f.with" then
+
+      log_error(["Error in with method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u less 5;
+   if Callchain /= ["class_f.less","5"] or value /= "class_f.less" then
+
+      log_error(["Error in less method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u lessf 5;
+   if Callchain /= ["class_f.lessf","5"] or value /= "class_f.lessf" then
+
+      log_error(["Error in lessf method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u npow 5;
+   if Callchain /= ["class_f.npow","5"] or value /= "class_f.npow" then
+
+      log_error(["Error in npow method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u < 5;
+   if Callchain /= ["class_f.<","5"] or value /= true then
+
+      log_error(["Error in < method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := 5 in u;
+   if Callchain /= ["class_f.in","5"] or value /= true then
+
+      log_error(["Error in in method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := -u;
+   if Callchain /= ["class_f.-"] or value /= "class_f.-" then
+
+      log_error(["Error in unary minus method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := domain u;
+   if Callchain /= ["class_f.domain"] or value /= "class_f.domain" then
+
+      log_error(["Error in domain method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := range u;
+   if Callchain /= ["class_f.range"] or value /= "class_f.range" then
+
+      log_error(["Error in range method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := pow u;
+   if Callchain /= ["class_f.pow"] or value /= "class_f.pow" then
+
+      log_error(["Error in pow method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := arb u;
+   if Callchain /= ["class_f.arb"] or value /= "class_f.arb" then
+
+      log_error(["Error in arb method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := # u;
+   if Callchain /= ["class_f.#"] or value /= "class_f.#" then
+
+      log_error(["Error in # method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value from u;
+   if Callchain /= ["class_f.from"] or value /= "class_f.from" then
+
+      log_error(["Error in from method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   save := value from u;
+   if Callchain /= ["class_f.from"] or value /= "class_f.from"  or
+      save /= "class_f.from" then
+
+      log_error(["Error in from method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value),
+                 "save = "+str(save)]);
+
+   end if;
+
+   Callchain := [];
+   value fromb u;
+   if Callchain /= ["class_f.fromb"] or value /= "class_f.fromb" then
+
+      log_error(["Error in fromb method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   save := value fromb u;
+   if Callchain /= ["class_f.fromb"] or value /= "class_f.fromb"  or
+      save /= "class_f.fromb" then
+
+      log_error(["Error in fromb method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value),
+                 "save = "+str(save)]);
+
+   end if;
+
+   Callchain := [];
+   value frome u;
+   if Callchain /= ["class_f.frome"] or value /= "class_f.frome" then
+
+      log_error(["Error in frome method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   save := value frome u;
+   if Callchain /= ["class_f.frome"] or value /= "class_f.frome"  or
+      save /= "class_f.frome" then
+
+      log_error(["Error in frome method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value),
+                 "save = "+str(save)]);
+
+   end if;
+
+   Callchain := [];
+   value := u(5);
+   if Callchain /= ["class_f.of","5"] or value /= "class_f.of" then
+
+      log_error(["Error in of method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u{5};
+   if Callchain /= ["class_f.ofa","5"] or value /= "class_f.ofa" then
+
+      log_error(["Error in ofa method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u(5..6);
+   if Callchain /= ["class_f.slice","5","6"] or value /= "class_f.slice" then
+
+      log_error(["Error in slice method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   value := u(5..);
+   if Callchain /= ["class_f.end","5"] or value /= "class_f.end" then
+
+      log_error(["Error in end method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   Callchain := [];
+   u(5) := 6;
+   if Callchain /= ["class_f.sof","5","6"] then
+
+      log_error(["Error in sof method",
+                 "Callchain = "+str(Callchain)]);
+
+   end if;
+
+   Callchain := [];
+   u{5} := 6;
+   if Callchain /= ["class_f.sofa","5","6"] then
+
+      log_error(["Error in sofa method",
+                 "Callchain = "+str(Callchain)]);
+
+   end if;
+
+   Callchain := [];
+   u(5..6) := 7;
+   if Callchain /= ["class_f.sslice","5","6","7"] then
+
+      log_error(["Error in sslice method",
+                 "Callchain = "+str(Callchain)]);
+
+   end if;
+
+   Callchain := [];
+   u(5..) := 6;
+   if Callchain /= ["class_f.send","5","6"] then
+
+      log_error(["Error in send method",
+                 "Callchain = "+str(Callchain)]);
+
+   end if;
+
+   u := class_u(1,2,3);
+   if {x : x in u} /= {[i,i**2] : i in [1 .. 10]} then
+
+      log_error(["Error in iterators method",
+                 "Set = "+str({x : x in u})]);
+
+   end if;
+
+   if {[x,y] : [x,y] in u} /= {[i,i**2] : i in [1 .. 10]} then
+
+      log_error(["Error in iterators method",
+                 "Set = "+str({[x,y] : [x,y] in u})]);
+
+   end if;
+
+   if {[x,y] : y = u(x)} /= {[i,i**2] : i in [1 .. 10]} then
+
+      log_error(["Error in iterators method",
+                 "Set = "+str({[x,y] : y = u(x)})]);
+
+   end if;
+
+   Callchain := [];
+   value := str(u);
+   if Callchain /= ["class_f.selfstr"] or value /= "class_f.selfstr" then
+
+      log_error(["Error in str method",
+                 "Callchain = "+str(Callchain),
+                 "value = "+str(value)]);
+
+   end if;
+
+   end_test;
+
+end test_program;

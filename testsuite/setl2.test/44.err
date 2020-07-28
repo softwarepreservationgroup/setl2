@@ -1,0 +1,7 @@
+
+*** Abnormal End -- source file => 
+                    line   => 684
+                    column => 12
+
+Instance variable PUBLIC is not visible outside class CLASS_U
+

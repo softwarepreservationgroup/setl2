@@ -1,0 +1,54 @@
+=  Instructions for building and installing SETL2 by W. Kirk Snyder
+
+		   Paul McJones <paul@mcjones.org>
+			Mountain View, CA, USA
+			    23 July 2020
+
+Based on information from Salvatore "Toto" Paxia and the guide
+https://cs.nyu.edu/faculty/paige/courses/setl/setl2.install .
+
+== To build:
+
+Execute these commands in the top-level directory:
+
+    ./configure
+    make
+
+(See INSTALL-Libtool for more information on configure.)
+
+== To install (to /usr/local/{bin,lib}):
+
+Execute this command in the top-level directory:
+
+    make install
+    
+On Linux (but not Macintosh), it may also be necessary to execute:
+
+    export LD_LIBRARY_PATH=/usr/local/lib
+
+The compiler (stlc) and interpreter (stlx) communicate via a SETL2
+program library, which by default resides in the file setl.lib in the working
+directory and is created by running the command:
+
+    stll -c setl2.lib
+    
+If desired, this library file may be placed in a different directory, in
+which case you should either define the environment variable SETL2_LIB
+to contain the full path of setl2.lib, or use the -l option to stlc and
+stlx.
+
+TO DO: How are the included packages and distributions accessed?
+
+To test:
+
+Execute these commands in any writable directory:
+
+stll -c setl2.lib
+cat > helloworld.stl
+program helloworld;
+print("Hello, World!");
+print("2+2 = ", 2+2);
+end;
+<Ctrl-D>
+stlc helloworld.stl
+stlx helloworld

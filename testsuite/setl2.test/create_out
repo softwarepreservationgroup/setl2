@@ -1,0 +1,17 @@
+exec stll -c setl2.lib
+exec stlc -n -l setl2.lib ../util.stl
+
+foreach testcase [lsort [glob -nocomplain *.stl]] {
+	puts $testcase
+
+	exec stlc -n -l setl2.lib $testcase
+    	set fout [string trimright $testcase .stl];
+
+    	set filerr [concat $fout.err]
+
+	set fileout [concat $fout.out]
+
+	if { [catch {exec stlx test_program > $fileout} msgerr]} {
+	    set ferr [open $filerr w]; puts $ferr $msgerr; close $ferr
+	}
+}

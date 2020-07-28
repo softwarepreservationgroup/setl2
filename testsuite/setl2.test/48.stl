@@ -1,0 +1,84 @@
+-- ==============================================================
+
+
+--
+-- test of object stack 
+-- ====================
+--
+
+program test_program;  -- test class stack
+
+use stack,Test_Common;
+
+Begin_Test("Stack_Object testing"); 
+
+
+for k in [3..5] loop
+ 
+   tup := [x: x in [-k..k]]; 
+   
+   stack_start := a_stack := [ x : x in stack(tup) ];  --create a stack
+
+   change_range := [x: x in [-2..k]];  -- a tuple for push and then pop operation
+
+-- test arb stack, stack with , from stack, and #stack
+
+   for change_elt in change_range loop   
+
+      a_stack := a_stack with change_elt;  -- push
+	top_elt := arb a_stack;   -- top
+
+      if top_elt  /= change_elt then
+      Log_Error(["Stack with or arb stack failed! ",
+                 "stack_start = ",str(stack_start),
+                 "change_elt  = ", str(change_elt),
+                 "stack_pushed = ", str(a_stack),
+                 "top_elt = ", str(top_elt)]);
+    end if;   
+  
+	
+   end loop;
+  
+   stack_pushed := [x: x in a_stack];
+   
+   if #stack_pushed /= #stack_start + #change_range then
+      Log_Error(["Stack WITH or #stack failed! ",
+                 "stack_start = ",str(stack_start),
+                 "change_range = ", str(change_range),
+                 "stack_pushed = ", str(stack_pushed),
+                 "#stack_start = ", str(#stack_start),
+                 "#change_range = ", str(#change_range),
+                 "#stack_pushed = ", str(#stack_pushed)]);
+    end if;   
+  
+   for j in [1..#change_range] loop   -- pop
+     from_elt from a_stack;
+     if not from_elt in change_range then 
+       Log_Error(["Stack WITH or FROM failed! From element not in change_range ",
+                  "stack_start = ",str(stack_start),
+                  "change_range = ", str(change_range),
+                  "stack_pushed =", str(stack_pushed),
+                  "from_elt = ", str(from_elt)]);
+        end if;   
+    end loop;
+
+    stack_poped := [x: x in a_stack];
+
+    if (stack_poped /= stack_start) or (#stack_poped /= #stack_pushed - #change_range) then 
+      Log_Error(["Stack FROM or WITH stack or #stack failed! ",
+                 "stack_start = ",str(stack_start),
+                 "stack_pushed = ", str(stack_pushed),
+                 "change_range = ", str(change_range),
+                 "stack_poped = ",  str(stack_poped),
+                 "#stack_poped = ", str(#stack_poped),
+                 "#change_range = ", str(#change_range),
+                 "#stack_pushed = ", str(#stack_pushed)]);
+    end if;   
+
+  
+  end loop;
+
+End_Test;
+ 
+
+end test_program;

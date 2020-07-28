@@ -1,0 +1,27 @@
+program test_program;  -- tests bin_sort and Kth linear-time median finder
+use sort_pak, Test_Common;
+
+Begin_Test("testing bin_sort and Kth linear-time median finder");
+
+for k in [1..5] loop
+   tup_to_sort := [3*(k+1-n): n in [1..k]];  -- tests bin_sort
+   tup_sorted := bin_sort(tup_to_sort,k+1);
+   ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+   if not ok  then Log_Error(["bin_sort failed!",
+                              "tup_to_sort = " + str(tup_to_sort),
+	                        "num_of_bin = " + str(k+1),
+                              "tup_sorted = " + str(tup_sorted)]);
+   end if;
+
+   tup_to_sort := [n: n in {-k..k}];         -- tests Kth finder
+   i := kth(tup_to_sort,k); -- should be -1
+   if i /= -1  then Log_Error(["kth finder failed!",
+                               "k = " + str(k),
+                               "tup_to_sort = " + str(tup_to_sort),
+                               "i = " + str(i)]);
+    end if;
+end loop;
+
+End_Test;
+
+end test_program; 

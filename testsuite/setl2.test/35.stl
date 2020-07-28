@@ -1,0 +1,68 @@
+-- =================================================================
+--
+--  Assignment Operations Test
+--  ==========================
+--
+--  There was initially a bug in assignment operations, in which the
+--  statement f(g(x)) +:= y was interpreted as f(g(x)) := f(g(x)) + y
+--  rather that t := g(x); f(t) := f(t) + y.  This program will test
+--  whether that has been fixed correctly.
+--
+
+program test_program;
+
+   use Test_Common;
+
+   var f_counter := 1;
+
+   Begin_Test("Assignment operations test");
+
+   Test_Tuple := [1,2,3,4,5,6,7,8,9,0];
+   f_counter := 1;
+
+   Test_Tuple(f()) +:= 1;
+
+   if Test_Tuple /= [1,3,3,4,5,6,7,8,9,0] then
+
+      Log_Error(["Assignment operation failed!",
+                 "Test_Tuple = "+str(Test_Tuple)]);
+
+   end if;
+
+   Test_Tuple := [1,2,3,4,5,6,7,8,9,0];
+   f_counter := 1;
+
+   Test_Tuple(f() .. f()) +:= [1];
+
+   if Test_Tuple /= [1,2,3,1,4,5,6,7,8,9,0] then
+
+      Log_Error(["Assignment operation failed!",
+                 "Test_Tuple = "+str(Test_Tuple)]);
+
+   end if;
+
+   Test_Tuple := [1,2,3,4,5,6,7,8,9,0];
+   f_counter := 1;
+
+   Test_Tuple(f() .. ) +:= [1];
+
+   if Test_Tuple /= [1,2,3,4,5,6,7,8,9,0,1] then
+
+      Log_Error(["Assignment operation failed!",
+                 "Test_Tuple = "+str(Test_Tuple)]);
+
+   end if;
+
+   End_Test;
+
+   --
+   --  Return increasing integers
+   --
+
+   procedure f;
+
+      return f_counter +:= 1;
+
+   end f;
+
+end test_program;

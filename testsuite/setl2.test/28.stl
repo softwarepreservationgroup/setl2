@@ -1,0 +1,270 @@
+-- ================================================================
+--
+--  Map Operations Test
+--  ===================
+--
+--  This program tests map operations on sets.  The descriptions of these
+--  operations are a little scattered throughout the SETL book, so I hope
+--  I have them all.
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("Map operations test");
+
+   --
+   --  Test simple map reference and assignment.
+   --
+
+   Map := {[i, i**2] : i in [1 .. 30]};
+
+   if exists i in [1 .. 30] | Map(i) /= i ** 2 then
+
+      Log_Error(["Map reference failed!",
+                 "Map = "+str(Map)]);
+
+   end if;
+
+   Map := {};
+
+   for i in [1 .. 30] loop
+
+      Map(i) := i**2;
+
+   end loop;
+
+   if exists i in [1 .. 30] | Map(i) /= i ** 2 then
+
+      Log_Error(["Map reference failed!",
+                 "Map = "+str(Map)]);
+
+   end if;
+
+   Map := {[str(i), str(i) + str(i)] : i in [abs("a") .. abs("z")]};
+
+   if exists i in [abs("a") .. abs("z")] |
+             Map(str(i)) /= str(i) + str(i) then
+
+      Log_Error(["Map reference failed!",
+                 "Map = "+str(Map)]);
+
+   end if;
+
+   Map := {};
+
+   for i in [abs("a") .. abs("z")] loop
+
+      Map(str(i)) := str(i) + str(i);
+
+   end loop;
+
+   if exists i in [abs("a") .. abs("z")] |
+             Map(str(i)) /= str(i) + str(i) then
+
+      Log_Error(["Map reference failed!",
+                 "Map = "+str(Map)]);
+
+   end if;
+
+   --
+   --  Test multi-valued reference and assignment.
+   --
+
+   Map := {};
+
+   for i in [1 .. 30] loop
+
+      Map +:= {[i,j] : j in [1 .. i]};
+
+   end loop;
+
+   for i in [1 .. 30] loop
+
+      if #(Map{i}) /= i then
+
+         Log_Error(["Map reference failed!",
+                    "Map = "+str(Map)]);
+
+      end if;
+
+      for j in [1 .. i] loop
+
+         if j notin Map{i} then
+
+            Log_Error(["Map reference failed!",
+                       "Map = "+str(Map)]);
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   Map := {};
+
+   for i in [1 .. 30] loop
+
+      if i mod 2 = 0 then
+
+         Map{i} := {j : j in [1 .. i]};
+
+      else
+
+         Map +:= {[i,j] : j in [1 .. i]};
+
+      end if;
+
+   end loop;
+
+   for i in [1 .. 30] loop
+
+      if #(Map{i}) /= i then
+
+         Log_Error(["Map reference failed!",
+                    "Map = "+str(Map)]);
+
+      end if;
+
+      for j in [1 .. i] loop
+
+         if j notin Map{i} then
+
+            Log_Error(["Map reference failed!",
+                       "Map = "+str(Map)]);
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   --
+   --  Test domain and range.
+   --
+
+   Map := {};
+
+   for i in [1 .. 30] loop
+
+      Map +:= {[i,j] : j in [1 .. i]};
+
+   end loop;
+
+   if domain(Map) /= {1 .. 30} then 
+
+      Log_Error(["Map domain failed!",
+                 "Map = "+str(Map),
+                 "domain(Map) = "+str(domain(Map))]);
+
+   end if;
+
+   if range(Map) /= {1 .. 30} then 
+
+      Log_Error(["Map range failed!",
+                 "Map = "+str(Map),
+                 "range(Map) = "+str(range(Map))]);
+
+   end if;
+
+   for i in [1 .. 30] loop
+
+      if #(Map{i}) /= i then
+
+         Log_Error(["Map reference failed!",
+                    "Map = "+str(Map)]);
+
+      end if;
+
+      for j in [1 .. i] loop
+
+         if j notin Map{i} then
+
+            Log_Error(["Map reference failed!",
+                       "Map = "+str(Map)]);
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   --
+   --  Test lessf.
+   --
+
+   Map := {};
+
+   for i in [1 .. 30] loop
+
+      Map +:= {[i,j] : j in [1 .. i]};
+
+   end loop;
+
+   for i in [1 .. 30] loop
+
+      Map lessf:= 31 - i;
+
+      if domain(Map) /= {1 .. 30 - i} then 
+
+         Log_Error(["Lessf failed!",
+                    "Map = "+str(Map),
+                    "domain(Map) = "+str(domain(Map))]);
+
+      end if;
+
+      if range(Map) /= {1 .. 30 - i} then 
+
+         Log_Error(["Lessf failed!",
+                    "Map = "+str(Map),
+                    "range(Map) = "+str(range(Map))]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test a few examples with tuple domains.
+   --
+
+   Map := {};
+
+   for i in [1 .. 15] loop
+
+      Map +:= {[[1,2,i],j] : j in [1 .. i]};
+
+   end loop;
+
+   for i in [1 .. 15] loop
+
+      if #(Map{1,2,i}) /= i then
+
+         Log_Error(["Map reference failed!",
+                    "Map = "+str(Map)]);
+
+      end if;
+
+      for j in [1 .. i] loop
+
+         if j notin Map{1,2,i} then
+
+            Log_Error(["Map reference failed!",
+                       "Map = "+str(Map)]);
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   if Map(1,2,1) /= 1 then
+
+      Log_Error(["Map reference failed!",
+                 "Map = "+str(Map)]);
+
+   end if;
+
+   End_Test;
+
+end test_program;

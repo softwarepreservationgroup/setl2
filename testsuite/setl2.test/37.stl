@@ -1,0 +1,108 @@
+-- ================================================================
+--
+--  This is Jack's KMP pattern matching package.  It failed, when the
+--  entire prior test suite succeeded once, so I'm including it in the
+--  test suite from now on.
+--
+
+package long_string_utility_pak;
+
+procedure match_to_pat(targ,pat,start,amt_to_slip);  -- linear time match of pattern and target strings
+procedure build_amt_to_slip(pat);  -- builds and returns the amt_to_slip vector used by match_to_pat
+
+end long_string_utility_pak;
+
+package body long_string_utility_pak;
+
+procedure match_to_pat(targ,pat,start,amt_to_slip);  -- linear time match of pattern and target strings
+
+if start - 1 + #pat > #targ then return OM; end if; -- case impossible prima facie
+
+n_matched_pat := 0;
+start_in_targ := start;
+
+while n_matched_pat < #pat loop
+
+  if (start_in_targ + n_matched_pat) > #targ then return OM; end if;  -- failure
+  
+  if pat(n_matched_pat + 1) = targ(start_in_targ + n_matched_pat) then   -- advance
+    n_matched_pat +:= 1;
+  else  -- move the starting position forward
+    start_in_targ +:= (if n_matched_pat > 0 then amt_to_slip(n_matched_pat) else 1 end if);
+    n_matched_pat -:= (if n_matched_pat > 0 then amt_to_slip(n_matched_pat) else 0 end if);
+  end if;
+
+end loop;
+
+return start_in_targ;  -- this is where the match begins
+
+end match_to_pat;
+
+procedure build_amt_to_slip(pat);  -- builds and returns the amt_to_slip vector
+
+amt_to_slip := (#pat) * [1];  -- the vector to be built
+amt_pat_seen := 1;
+total_slip := 1;  -- total prior slip need to match portion of pattern already processed
+
+while amt_pat_seen < #pat loop
+
+  if total_slip >= amt_pat_seen then -- nothing matched, so try to match first character
+  
+    amt_pat_seen +:= 1;
+	
+	if pat(amt_pat_seen) /= pat(1) then total_slip +:= 1; end if; 
+						-- if next character doesnt match, slip past it
+	
+    amt_to_slip(amt_pat_seen) := total_slip;
+
+    elseif pat(amt_pat_seen + 1) /= pat((matched_len := (amt_pat_seen - total_slip)) + 1) then -- move the starting position forward
+	
+	total_slip +:= amt_to_slip(matched_len);
+  
+  else  -- one more character matches so
+  
+    amt_pat_seen +:= 1;
+    amt_to_slip(amt_pat_seen) := total_slip;
+	
+  end if;
+  
+end loop;
+
+return amt_to_slip;
+
+end build_amt_to_slip;
+
+end long_string_utility_pak;
+
+program test_program;
+
+use long_string_utility_pak, test_common;
+
+   Begin_Test("KMP pattern matching test");
+
+amt_to_slip := build_amt_to_slip(pat := "aabaababbabaab");
+targ := "aabaabaabaababbabaabbbabaabaabaabaababbabaabbbab";
+-- targ := "aab aab aabaababbabaab bbab aab aab aabaababbabaab bbab";
+
+start := 1;
+if match_to_pat(targ,pat,start,amt_to_slip) /= 7 then
+
+   Log_Error(["match_to_pat failed!"]);
+
+end if;
+
+if match_to_pat(targ,pat,8,amt_to_slip) /= 31 then
+
+   Log_Error(["match_to_pat failed!"]);
+
+end if;
+
+if match_to_pat(targ,pat,32,amt_to_slip) /= om then
+
+   Log_Error(["match_to_pat failed!"]);
+
+end if;
+
+end_test;
+
+end test_program;

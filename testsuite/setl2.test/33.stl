@@ -1,0 +1,583 @@
+-- ===================================================================
+--
+--  String Procedure Test
+--  =====================
+--
+--  This program tests a variety of built-in procedures for string
+--  scanning.
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("String procedure test");
+
+   --
+   --  Test str
+   --
+
+   Test_Set := {[12345,               "12345"           ],
+                [{1,2,3},             "{1, 2, 3}"       ],
+                [[1,2,3,4,5],         "[1, 2, 3, 4, 5]" ]};
+
+   for [Left, Right] in Test_Set loop
+
+      if str(Left) /= Right then
+
+         Log_Error(["Str failed!",
+                    "Left = "+str(Left),
+                    "str(Left) = "+str(str(Left)),
+                    "Right = "+str(Right)]);
+
+      end if;
+
+   end loop;
+      
+   --
+   --  Test the any built-in procedure
+   --
+
+   Pairs := [ ["abcdefghijklmnopqrstuv",    "cbedaf"                      ],
+              ["abcdefghijklmnopqrstuv",    ""                            ],
+              ["",                          "cbedaf"                      ],
+              ["joy to the world",          "abcdefghijklmnopqrstuvwxyz"  ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := any(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if #Left = 0 then
+         Llen := 0;
+      elseif Left(1) in Right then
+         Llen := 1;
+      else
+         Llen := 0;
+      end if;
+
+      if Lresult /= Left(1 .. Llen) or 
+         Rresult /= Left(Llen + 1 .. #Left) then
+
+         Log_Error(["Any failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the rany built-in procedure
+   --
+
+   Pairs := [ ["vutsrqponmlkjihgfedcba",    "cbedaf"                      ],
+              ["vutsrqponmlkjihgfedcba",    ""                            ],
+              ["",                          "cbedaf"                      ],
+              ["joy to the world",          "abcdefghijklmnopqrstuvwxyz"  ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := rany(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if #Left = 0 then
+         Llen := #Left + 1;
+      elseif Left(#Left) in Right then
+         Llen := #Left;
+      else
+         Llen := #Left + 1;
+      end if;
+
+      if Lresult /= Left(LLen .. #Left) or 
+         Rresult /= Left(1 .. Llen - 1) then
+
+         Log_Error(["Rany failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the break built-in procedure
+   --
+
+   Pairs := [ ["vutsrqponmlkjihgfedcba",    "cbedaf"                      ],
+              ["vutsrqponmlkjihgfedcba",    ""                            ],
+              ["",                          "cbedaf"                      ],
+              ["joy to the world",          "abcdefghijklmnopqrstuvwxyz"  ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := break(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if exists Llen in [1 .. #Left] | Left(Llen) in Right then
+         Llen -:= 1;
+      else 
+         Llen := #Left;
+      end if;
+
+      if Lresult /= Left(1 .. Llen) or 
+         Rresult /= Left(Llen + 1 .. #Left) then
+
+         Log_Error(["Break failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the rbreak built-in procedure
+   --
+
+   Pairs := [ ["abcdefghijklmnopqrstuv",    "cbedaf"                      ],
+              ["abcdefghijklmnopqrstuv",    ""                            ],
+              ["",                          "cbedaf"                      ],
+              ["joy to the world",          "abcdefghijklmnopqrstuvwxyz"  ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := rbreak(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if exists Llen in [0 .. #Left - 1] | Left(#Left - Llen) in Right then
+         Llen := #Left - Llen + 1;
+      else 
+         Llen := 1;
+      end if;
+
+      if Lresult /= Left(Llen .. #Left) or 
+         Rresult /= Left(1 .. Llen - 1) then
+
+         Log_Error(["Rbreak failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the len built-in procedure
+   --
+
+   Test_Strings := {"abcdef",    
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "",
+                    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"};
+
+   for Test in Test_Strings loop
+
+      for i in [1, 3 .. 100] loop
+
+         TmpJunk := Test;
+         Lresult := len(TmpJunk,i);
+         Rresult := TmpJunk;
+
+         if #Test < i then
+ 
+            if Lresult /= Test or Rresult /= "" then
+
+               Log_Error(["Len failed!",
+                          "Test = "+str(Test),
+                          "i = "+str(i),
+                          "Lresult = "+str(Lresult),
+                          "Rresult = "+str(Rresult)]);
+
+            end if;
+
+         else
+
+            if Lresult /= Test(1 .. i) or
+               Rresult /= Test(i + 1 .. #Test) then
+
+               Log_Error(["Len failed!",
+                          "Test = "+str(Test),
+                          "i = "+str(i),
+                          "Lresult = "+str(Lresult),
+                          "Rresult = "+str(Rresult)]);
+
+            end if;
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   --
+   --  Test the rlen built-in procedure
+   --
+
+   Test_Strings := {"abcdef",    
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "",
+                    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"};
+
+   for Test in Test_Strings loop
+
+      for i in [1, 3 .. 100] loop
+
+         TmpJunk := Test;
+         Lresult := rlen(TmpJunk,i);
+         Rresult := TmpJunk;
+
+         if #Test < i then
+ 
+            if Lresult /= Test or Rresult /= "" then
+
+               Log_Error(["Rlen failed!",
+                          "Test = "+str(Test),
+                          "i = "+str(i),
+                          "Lresult = "+str(Lresult),
+                          "Rresult = "+str(Rresult)]);
+
+            end if;
+
+         else
+
+            if Lresult /= Test(#Test - i + 1 ..) or
+               Rresult /= Test(1 .. #Test - i) then
+
+               Log_Error(["Rlen failed!",
+                          "Test = "+str(Test),
+                          "i = "+str(i),
+                          "Lresult = "+str(Lresult),
+                          "Rresult = "+str(Rresult)]);
+
+            end if;
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   --
+   --  Test the match built-in procedure
+   --
+
+   Pairs := [ ["abcdefghihklmn",           "abc"                          ],
+              ["abdefgh",                  "abc"                          ],
+              ["cbedaf",                   ""                             ],
+              ["now is the",               "now is the time"              ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := match(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if #Right <= #Left and Right = Left(1 .. #Right) then
+      
+         if Lresult /= Right or Rresult /= Left(#Right + 1 .. #Left) then
+
+            Log_Error(["Match failed!",
+                       "Left = "+str(Left),
+                       "Right = "+str(Right),
+                       "Lresult = "+str(Lresult),
+                       "Rresult = "+str(Rresult)]);
+
+         end if;
+
+      elseif Lresult /= "" or Rresult /= Left then
+
+         Log_Error(["Match failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the rmatch built-in procedure
+   --
+
+   Pairs := [ ["abcdefghihklmn",           "lmn"                          ],
+              ["abcdefg",                  "dfg"                          ],
+              ["cbedaf",                   ""                             ],
+              ["is the time",              "now is the time"              ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := rmatch(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if #Right <= #Left and Right = Left(#Left - #Right + 1 .. #Left) then
+      
+         if Lresult /= Right or Rresult /= Left(1 .. #Left - #Right) then
+
+            Log_Error(["Rmatch failed!",
+                       "Left = "+str(Left),
+                       "Right = "+str(Right),
+                       "Lresult = "+str(Lresult),
+                       "Rresult = "+str(Rresult)]);
+
+         end if;
+
+      elseif Lresult /= "" or Rresult /= Left then
+
+         Log_Error(["Rmatch failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the notany built-in procedure
+   --
+
+   Pairs := [ ["vutsrqponmlkjihgfedcba",    "cbedaf"                      ],
+              ["vutsrqponmlkjihgfedcba",    ""                            ],
+              ["",                          "cbedaf"                      ],
+              ["joy to the world",          "abcdefghijklmnopqrstuvwxyz"  ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := notany(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if #Left = 0 then
+         Llen := 0;
+      elseif Left(1) notin Right then
+         Llen := 1;
+      else
+         Llen := 0;
+      end if;
+
+      if Lresult /= Left(1 .. Llen) or 
+         Rresult /= Left(Llen + 1 .. #Left) then
+
+         Log_Error(["Notany failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the rnotany built-in procedure
+   --
+
+   Pairs := [ ["abcdefghijklmnopqrstuv",    "cbedaf"                      ],
+              ["abcdefghijklmnopqrstuv",    ""                            ],
+              ["",                          "cbedaf"                      ],
+              ["joy to the world",          "abcdefghijklmnopqrstuvwxyz"  ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := rnotany(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if #Left = 0 then
+         Llen := #Left + 1;
+      elseif Left(#Left) notin Right then
+         Llen := #Left;
+      else
+         Llen := #Left + 1;
+      end if;
+
+      if Lresult /= Left(LLen .. #Left) or 
+         Rresult /= Left(1 .. Llen - 1) then
+
+         Log_Error(["Rnotany failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the span built-in procedure
+   --
+
+   Pairs := [ ["abcdefghijklmnopqrstuv",    "cbedaf"                      ],
+              ["abcdefghijklmnopqrstuv",    ""                            ],
+              ["",                          "cbedaf"                      ],
+              ["joy to the world",          "abcdefghijklmnopqrstuvwxyz"  ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := span(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if exists Llen in [1 .. #Left] | Left(Llen) notin Right then       
+         Llen -:= 1;
+      else 
+         Llen := #Left;
+      end if;
+
+      if Lresult /= Left(1 .. Llen) or 
+         Rresult /= Left(Llen + 1 .. #Left) then
+
+         Log_Error(["Span failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the rspan built-in procedure
+   --
+
+   Pairs := [ ["vutsrqponmlkjihgfedcba",    "cbedaf"                      ],
+              ["vutsrqponmlkjihgfedcba",    ""                            ],
+              ["",                          "cbedaf"                      ],
+              ["joy to the world",          "abcdefghijklmnopqrstuvwxyz"  ] ];
+
+   for [Left, Right] in Pairs loop
+
+      TmpJunk := Left;
+      Lresult := rspan(TmpJunk,Right);
+      Rresult := TmpJunk;
+
+      if exists Llen in [0 .. #Left - 1] | Left(#Left - Llen) notin Right then       
+         Llen := #Left - Llen + 1;
+      else 
+         Llen := 1;
+      end if;
+
+      if Lresult /= Left(Llen .. #Left) or 
+         Rresult /= Left(1 .. Llen - 1) then
+
+         Log_Error(["Rspan failed!",
+                    "Left = "+str(Left),
+                    "Right = "+str(Right),
+                    "Lresult = "+str(Lresult),
+                    "Rresult = "+str(Rresult)]);
+
+      end if;
+
+   end loop;
+
+   --
+   --  Test the lpad built-in procedure
+   --
+
+   Test_Strings := {"abcdef",    
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "",
+                    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"};
+
+   for Test in Test_Strings loop
+
+      for i in [1, 4 .. 100] loop
+
+         Result := lpad(Test,i);
+
+         if #Test > i then
+ 
+            if Result /= Test then
+
+               Log_Error(["Lpad failed!",
+                          "Test = "+str(Test),
+                          "i = "+str(i),
+                          "Result = "+str(Result)]);
+
+            end if;
+
+         else
+
+            if #Result /= i or 
+               (exists j in [1 .. i - #Test] | Result(j) /= " ") or
+               Result(i - #Test + 1 .. i) /= Test then
+
+               Log_Error(["Lpad failed!",
+                          "Test = "+str(Test),
+                          "i = "+str(i),
+                          "Result = "+str(Result)]);
+
+            end if;
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   --
+   --  Test the rpad built-in procedure
+   --
+
+   Test_Strings := {"abcdef",    
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "",
+                    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"};
+
+   for Test in Test_Strings loop
+
+      for i in [1, 4 .. 100] loop
+
+         Result := rpad(Test,i);
+
+         if #Test > i then
+ 
+            if Result /= Test then
+
+               Log_Error(["Rpad failed!",
+                          "Test = "+str(Test),
+                          "i = "+str(i),
+                          "Result = "+str(Result)]);
+
+            end if;
+
+         else
+
+            if #Result /= i or 
+               (exists j in [#Test + 1 .. i] | Result(j) /= " ") or
+               Result(1 .. #Test) /= Test then
+
+               Log_Error(["Rpad failed!",
+                          "Test = "+str(Test),
+                          "i = "+str(i),
+                          "Result = "+str(Result)]);
+
+            end if;
+
+         end if;
+
+      end loop;
+
+   end loop;
+
+   End_Test;
+
+end test_program;

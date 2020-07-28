@@ -1,0 +1,73 @@
+native package stringm;				-- string manipulation package
+
+------------------------------------
+-- Exact String Matching
+------------------------------------
+
+procedure kmp(string,pattern);		-- Knuth-Morris-Pratt match of a pattern to a string
+									-- returns tuple of all match points 
+procedure kmp_compile(pattern);		-- optimized Knuth-Morris-Pratt match; returns compiled pattern
+procedure kmp_exec(string,pat);		-- optimized Knuth-Morris-Pratt match using pre-compiled pattern
+									-- returns tuple of all match points 
+
+procedure bm(string,pattern);		-- Boyer-Moore match of a pattern to a string
+									-- returns tuple of all match points 
+procedure bm_compile(pattern);		-- optimized Boyer-Moore match; returns compiled pattern
+procedure bm_exec(string,pat);		-- optimized Boyer-Moore match using pre-compiled pattern
+									-- returns tuple of all match points 
+
+procedure kr(string,pattern);		-- Karp-Rabin probabilistic match of a pattern to a string
+									-- returns tuple of all match points 
+
+------------------------------------
+-- Exact Matching against a Set of Patterns
+------------------------------------
+
+procedure ac_compile(tuple);		-- Aho-Corasik match of list of patterns to a string; compiles pattern
+procedure ac_init(pattern,text);	-- Aho-Corasik match of list of patterns to a string; finds first match
+procedure ac_next_match(pattern);	-- Aho-Corasik match of list of patterns to a string; 
+									-- returns next match 
+									-- (as a triple [tuple_index_of_pattern_matched, lic,len]), or OM
+
+------------------------------------
+-- Suffix Trees
+------------------------------------
+
+procedure st_create();
+procedure st_add_string(tree,stg);		-- suffix-tree match of list of patterns to a string; compiles pattern
+procedure st_match(st,pattern);	-- suffix-tree match of list of patterns to a string
+									-- returns tuple of all match points 
+------------------------------------
+-- Edit Distance
+------------------------------------
+procedure edist(s1,s2);				-- edit distance between two strings
+procedure exedist(s1,s2,w);			-- weighted edit distance between two strings
+									-- the weights w should be supplied as an integer quadruple:
+									-- [insert_weight,delete_weight,subsitute_weight,match_weight]
+procedure etrans(s1,s2);			-- best edit sequence between two strings
+									-- returns a descriptor consisting of characters M (matching character)
+									-- S (replace character) D (delete), I (insert), followed by integer distance 
+procedure exetrans(s1,s2,w);		-- best edit sequence between two strings, using weights
+									-- returns a descriptor consisting of characters M (matching character)
+									-- S (replace character) D (delete), I (insert), followed by integer distance
+									-- the weights w should be supplied as an integer quadruple:
+									-- [insert_weight,delete_weight,subsitute_weight,match_weight]
+
+------------------------------------
+-- Longest matching substring
+------------------------------------
+procedure lcseq(s1,s2);				-- finds longest matching subsequence of two strings; returns a pair
+									-- [common_string,length]. Note that this is an increasing sequence, not
+									-- necessarily contiguous
+
+------------------------------------
+-- Approximate matching operations
+------------------------------------
+procedure simil(s1,s2,pws);			-- finds the 'optimal alignment' of two strings, representing this
+									-- as a 
+procedure similt(s1,s2,pws);		-- finds the 'optimal alignment' of two strings, representing this
+									-- as a 
+
+procedure pwscores(a);
+
+end stringm;

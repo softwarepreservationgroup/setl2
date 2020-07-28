@@ -1,0 +1,55 @@
+-- ====================================================================
+--
+--  Unbounded Loop Test
+--  ===================
+--
+--  We added an unconditional loop to SETL2, as in Ada.
+--
+
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("Loop test");
+
+   Counter := 1;
+
+   loop
+
+      if Counter = 100 then
+         exit;
+      end if;
+
+      Counter +:= 1;
+
+   end loop;
+
+   if Counter /= 100 then
+
+      Log_Error(["Loop failed!",
+                 "Counter = "+str(Counter)]);
+
+   end if;
+
+   Counter := 1;
+
+   New_Counter := loop
+
+      if Counter = 100 then
+         exit Counter;
+      end if;
+
+      Counter +:= 1;
+
+   end loop;
+
+   if New_Counter /= 100 then
+
+      Log_Error(["Loop failed!",
+                 "New_Counter = "+str(New_Counter)]);
+
+   end if;
+
+   End_Test;
+
+end test_program;

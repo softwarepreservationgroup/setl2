@@ -1,0 +1,197 @@
+native package parser;
+  procedure parse(str);					-- parse a string,  returning its parse tree as a  nested  set of tuples
+  											-- this handles all SETL 'compilation  units'
+  procedure parse_expr(str);			-- parse a string,  returning its parse tree as a  nested  set of tuples
+  											-- this handles any string tht is a valid 'program body'
+  procedure compile(str);
+  procedure setl_num_errors();
+  procedure setl_err_string(err_num);
+end;
+
+-- 							********* Using the parse function *********
+
+-- To use the 'parse' function supplied by the 'parser' native package, one must understand the
+-- inputs it can handle and the structure of the parse trees it returns.
+
+-- In its present form, the parser can handle sequences of expressions and statements, which
+-- must end in semicolons. It will shortly be generalized to allow seqences of procedures, 
+-- and full programs, packages, and classes also.
+
+-- The parse trees returned by the 'parse' function reflect the nested stucture of the inputs analyzed.
+
+-- The overall list of statements is represented by a top-level list node of the form
+
+--		[_list, repn_of_statement_1, repn_of_statement_2, ...]
+
+-- Constructs involving built-in SETL operators and syntactic forms are represented by special nodes;
+-- variables and calls to functions other than built-in infix and prefix operators are represented using
+-- nodes of the form "_of, followed by the name of the fuction and its list of arguments. Examples are:   
+
+-- b(x,y)		is represented by		["_of", "B", ["_list", "X", "Y"]]
+-- b()			is represented by		["_of", "B"]
+-- b;			is represented by		the list element "B"
+
+-- As these examples show, in parse trees all names are capitalized; this gives SETL its case independence.
+
+-- The node-types used are:  
+
+-- [x,y]		is represented by		["_enum_tup", "X", "Y"]
+-- {x,y}		is represented by		["_enum_set", "X", "Y"]
+-- [x]			is represented by		["_enum_tup", "X", "Y"], etc.
+-- [ ]			is represented by		["_nulltup"], etc.
+-- [x..y]		is represented by		["_arith_tup", ["_list", "X"], "Y"], etc.
+-- [x,y,z..w]	is represented by		["_arith_tup", ["_list", "X", "Y", "Z"], "W"], etc.
+						-- (note that the parser handles this general case)
+-- b(x..y)		is represented by		["_slice", "B", "X", "Y"]
+-- b(x..)		is represented by		["_end", "B", "X", "Y"]
+-- b := y		is represented by		["_assign", "B", "Y"]
+	-- all the other assignment forms are derived from this. For example, 
+-- b(x..) := y		is represented by	["_assign", ["_end", "B", "X"], "Y"]
+-- b(x..y) := z		is represented by	["_assign", ["_slice", "B", "X", "Y"], "Z"]
+-- b(x) := z	is represented by	["_assign", ["_of", "B", ["_list", "X"]], "Z"]
+-- b(x,y)		is represented by	["_of", "B", ["_list", "X", "Y"]]
+-- b(x,y) := z	is represented by	["_assign", ["_of", "B", ["_list", "X", "Y"]], "Z"]
+		-- supefluous parentheses are eleded in the parse tree, simplifying it but creating some problems
+		-- when parse trees must be back-correlated with the token tuples from which they originate
+
+-- the SETL binary operators ** * / MOD ? + - MAX MIN = /= < <= > >= in notin subset incs 
+-- AND OR FROM FROMB FROME NPOW are represented by the following nodes:
+
+-- "_expon "_mult "_div "_mod "_question "_add "_sub "_max "_min "_eq "_ne "_lt
+-- "_le "_gt "_ge "_in "_notin "_subset "_incs "_and "_or "_from "_fromb "_frome "_npow
+
+-- the SETL monadic operators 'not - # arb domain range pow' are represented by the following nodes:
+
+-- 			"_uminus "_nelt "_arb "_domain "_range "_pow
+
+-- set and tuple formers like [x: y in s | condition] are represented by structures like
+
+-- 			["_gentup", "X", ["_iter_list", ["_in", "Y", "S"], "CONDITION"], etc.
+
+-- If the condition is omitted in the source text it is omitted in the parse tree also. If the 
+-- leading expression is omitted, "_gentup" and "_genset" are replaced by "_gentup_noexp" and "_genset_noexp"
+-- respectively.
+
+-- All such iterative constructs involve an '"_iter_list' node, whose elements are the sucessive iterators.
+-- These are all expressions, e.g. [y: y = f(x) | condition] is represented by 
+
+-- ["_gentup", "Y", ["_iter_list", ["_eq", "Y", ["_of", "F", ["_list", "X"]]]], "CONDITION"].
+
+-- Coversely the parser will accept arbitrary expressions in this position, e.g. [y: u + v = f/x | condition] is represented by
+
+-- ["_list", ["_gentup", "Y", ["_iter_list", ["_eq", ["_add", "U", "V"], ["_div", "F", "X"]]], "CONDITION"]]
+
+-- In the full SETL compiler such constructs are rejected during a post-parse phase; but programs 
+-- which use the parser directly may find use for them.
+
+-- Similar remarks apply to other allowed iterators, e.g. 'exists y = f(x) | condition' is represented by
+
+-- ["_exists", ["_ex_iter", ["_eq", "Y", ["_of", "F", ["_list", "X"]]]], "CONDITION"]
+
+-- and likewise for 'forall y = f(x) | condition'. The 'for' iterator construct 
+
+-- 				for y = f(x) | condition loop a; b; c; end loop;
+
+-- is represented by
+
+-- ["_for", ["_iter_list", ["_eq", "Y", ["_of", "F", ["_list", "X"]]]], "CONDITION", ["_list", "A", "B", "C"]],
+
+-- the body of the loop being represented by a final component of "_list" type. 'while' and 'until' iterators like
+
+-- 				while condition loop a; b; c; end loop;
+
+-- are similarly represented by
+
+-- 		["_while", "CONDITION", ["_list", "A", "B", "C"]], etc.
+
+-- Conditionals like
+
+-- 		if c1 then a; b; c; elseif c2 then d; else e; end if;
+
+-- are represented by
+
+-- ["_if_stmt", "C1", ["_list", "A", "B", "C"], ["_if_stmt", "C2", ["_list", "D"], ["_list", "E"]]]
+
+-- and the corresponding conditional expressions, e.g.
+
+-- 		if c1 then a elseif c2 then d else e end if;
+
+-- by			["_if_expr", "C1", "A", ["_if_expr", "C2", "D", "E"]].
+
+-- A 'case' statement like
+
+-- 			case a when b,b2 => c; otherwise => d; end case;
+
+-- is represented by
+
+-- ["_case_stmt", "A", 
+--		["_list", ["_when", ["_list", "B", "B2"], ["_list", "C"]]], 
+--			["_list", "D"]]
+
+-- If the 'otherwise' clause is omitted so is final the component of the subtree 
+-- representing the case statement, e.g 
+
+-- 			case a when b,b2 => c; when b3 => d; end case;
+
+-- is represented by
+
+-- ["_case_stmt", "A", 
+--		["_list", ["_when", ["_list", "B", "B2"], ["_list", "C"]], 
+--			["_when", ["_list", "B3"], ["_list", "D"]]]]
+
+-- similarly case expressions like
+
+-- 				case a when b,b2 => c otherwise => d end case
+
+-- are represented by trees like
+
+-- 		["_case_expr", "A", ["_list", ["_when", ["_list", "B", "B2"], "C"]], "D"]
+
+-- Alternative case statement forms like
+
+-- 					case when b => c; otherwise => d; end case;
+
+-- are represented by trees like
+
+-- 	["_guard_stmt", ["_list", ["_when", "B", ["_list", "C"]]], ["_list", "D"]];
+
+-- Again, omission of the 'otherwise' clause simply causes omission of the final 
+-- component of the corresponding subtree.
+
+-- Alternative case expression forms like
+
+-- 					case when b => c otherwise => d end case;
+
+-- are represented by trees like
+
+-- 		["_guard_expr", ["_list", ["_when", "B", "C"]], "D"]
+
+-- The 'return' statement is treated like a monadic operator, so
+
+-- return x		is represented by	["_return", "X"]
+-- return 		is represented by	["_return"]		
+
+-- Similarly 
+
+-- exit 		is represented by	["_exit"]		
+-- continue 	is represented by	["_continue"]	
+-- stop 		is represented by	["_stop"]		
+
+-- Assignment targets like [a,-,b,-,-] containing placeholders are represented by nodes like
+
+-- 			["A", _placeholder, "B", _placeholder, _placeholder]
+
+-- Since no sematic checks are performed by the parser, constructs of this kind are allowed in any position.
+
+-- Quoted strings within Setl Expressions are represented by themselves, with their enclosing
+-- double quotes.
+
+--		*************** Using the Parser as a front end to other systems requiring parsed input ***************
+
+-- Since no sematic checks are performed by the parser, it can handle a somewhat wider range of constructs 
+-- than the SETL language proper allows, including various expression forms useful in a logic system. 
+-- This includes:
+
+-- (i) Iterators without restrictions in in setformers and quantifiers, e.g {x + y: x, y in z | x > 0} or 
+-- exists x, y in z | x > 0 or forall x, y in z | x > 0. Quantifiers over all the variables in a following 
+-- expression can therfore be written as forall OM | x > 0.

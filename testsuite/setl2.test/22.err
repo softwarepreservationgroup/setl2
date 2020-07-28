@@ -1,0 +1,10 @@
+
+*** Abnormal End -- source file => /local/aurelio/cvsroot/setl/testsuite/setl2.test/22.stl
+                    line   => 9
+                    column => 10
+
+Invalid slice limits:
+Source => tuple: [1, 2, 3, 4, 5, 6, 7, 8]
+Left => integer: -1
+Right => integer: -5
+

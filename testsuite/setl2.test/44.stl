@@ -1,0 +1,1325 @@
+-- ===========================================================================
+-- Part I 
+-- ======
+
+-- This part contains Prof. Jack Schwartz's sorting package and objects:
+        -- package sort_pak;
+        -- class stack;
+        -- class up_heap, directable_heap, double_heap.
+
+-- and package random -- to generate a simple randomly tuple or set by given size.
+
+package sort_pak;
+
+procedure merge_sort(lsst); -- can be a set, or tuple; elements can themselves be elementary or tuples
+procedure iterative_merge_sort(tup_to_sort);  -- iterative mergesort
+procedure bin_sort(tup,num_of_bins);  -- 'pocket' or 'bin' sort
+procedure ford_johnson(set_to_sort);  -- the Ford-Johnson comparison-efficient sort
+procedure linsort(tup);
+
+-- 'optimistic' sort, which works well if there are only a limited number of up-and down runs.
+-- find a first run; then find the next, and merge with the first; continue this as long as tup 
+-- is not exhausted.
+procedure quicksort(values);  -- from the Doberkat collection
+procedure shellsort (values);  -- from the Doberkat collection
+procedure kth(tup,k);  -- linear-time median finder
+
+end sort_pak;
+
+package body sort_pak;
+
+procedure bin_sort(tup,num_of_bins);  -- 'pocket' or 'bin' sort
+
+divisor := 1;
+bins := [[ ],tup];  -- just to get started
+
+until  ( #tup <=1) or ( #bins(1) = #tup and bins(1)(1) <= bins(1)(2) ) loop
+
+  tup := +/bins;  -- put back in on pile
+    bins := num_of_bins * [[ ]];
+    
+      for item in tup loop  -- distribute into bins
+	    key := ((item/divisor) mod num_of_bins) + 1;
+	    	bins(key) with:= item;  -- place in appropriate bin
+		  end loop;
+		  
+		    divisor *:= num_of_bins;
+		      
+			end loop;
+			
+return tup;
+			
+end bin_sort;
+
+procedure iterative_merge_sort(tup_to_sort);  -- iterative mergesort			
+
+if #tup_to_sort < 2 then  -- if there are less than 2 elements then return
+  return tup_to_sort;
+ elseif (if is_tuple(elt1 := tup_to_sort(1)) then elt1(1) else elt1 end if) > 
+ 			(if is_tuple(elt2 := tup_to_sort(2)) then elt2(1) else elt2 end if) then -- interchange
+			  [tup_to_sort(1),tup_to_sort(2)] := [tup_to_sort(2),tup_to_sort(1)];
+end if;
+
+if #tup_to_sort = 2 then  -- if there are less than 3 elements then return
+
+
+return tup_to_sort;
+
+end if; 
+
+index_tup := [2];  -- note the first zone
+end_of_sorted := 2;  -- note the end of the sorted zone
+
+
+while (nixt := #index_tup) > 1 or end_of_sorted /= #tup_to_sort loop
+
+  if end_of_sorted = #tup_to_sort or (nixt > 1 and index_tup(nixt) = index_tup(nixt-1)) then
+  
+   					-- merge; first set up the boundaries and the take pointers for the zones to be merged
+						
+    take_ptr_2 := end_of_sorted - index_tup(nixt) + 1;
+    take_ptr_1 := (restore_ptr := take_ptr_2 - index_tup(nixt-1));
+    
+
+    index_tup(nixt-1..nixt) := [index_tup(nixt) + index_tup(nixt-1)];  -- indicate that the 2 blocks are combined
+    
+    last_take_1 := take_ptr_2 - 1;
+    last_take_2 := end_of_sorted;
+
+	aux_merge_tup := [];  -- auxilary tuple for merges
+	
+    while take_ptr_1 <= last_take_1 and take_ptr_2 <= last_take_2 loop  -- now the actual merge
+    
+	  if (if is_tuple(elt1 := tup_to_sort(take_ptr_1)) then elt1(1) else elt1 end if)
+	  	       <= (if is_tuple(elt2 := tup_to_sort(take_ptr_2)) then elt2(1) else elt2 end if) then
+			 
+  		aux_merge_tup with:= (new_item := tup_to_sort(take_ptr_1)); 
+				take_ptr_1  +:= 1;
+	  else
+	  	aux_merge_tup with:= (new_item := tup_to_sort(take_ptr_2)); 
+	    take_ptr_2  +:= 1;	  
+	  end if;
+	  
+	end loop;
+		
+	-- and now handle any leftover piece
+	
+	
+	if take_ptr_1 <= last_take_1 then -- move this piece
+	
+	  for ix in [take_ptr_1..last_take_1] loop
+	     aux_merge_tup with:= (new_item := tup_to_sort(ix)); 
+	  end loop;
+	  	  
+	elseif take_ptr_2 <= last_take_2 then  -- move this piece
+		
+	  for ix in [take_ptr_2..last_take_2] loop
+	     aux_merge_tup with:= (new_item := tup_to_sort(ix)); 
+	  end loop;
+	 
+	 end if;
+	 
+	-- and now move the merged section back
+	
+	
+	for item = aux_merge_tup(j) loop
+	   tup_to_sort(restore_ptr) := item;
+	   restore_ptr +:= 1;
+    end loop;
+    
+    
+    
+   elseif #tup_to_sort > end_of_sorted+1 then -- put a sorted block of two on the sorted zone
+   
+     if (if is_tuple(elt1 := tup_to_sort(end_of_sorted+1)) then elt1(1) else elt1 end if) > 
+       (if is_tuple(elt2 := tup_to_sort(end_of_sorted+2)) then elt2(1) else elt2 end if) then -- interchange
+	 [tup_to_sort(end_of_sorted+1),tup_to_sort(end_of_sorted+2)] := [tup_to_sort(end_of_sorted+2),tup_to_sort(end_of_sorted+1)];
+	
+	end if;
+	
+	
+	index_tup with:= 2;
+    end_of_sorted +:= 2;
+    
+    
+   else  -- put a block of one on the sorted zone
+   	index_tup with:= 1;
+   end_of_sorted +:= 1;
+   
+ end if;
+ 
+end loop;
+
+return tup_to_sort;
+
+end iterative_merge_sort;
+
+procedure merge_sort(lsst);  --merge_by_halves sort
+
+lst :=lsst;
+if type(lst) = "SET" then lst := [x: x in lst]; end if;
+return if #lst < 2 then lst else 
+merge(merge_sort(lst(1..#lst/2)),merge_sort(lst(#lst/2+1..))) end if;
+end merge_sort; 
+
+procedure merge(lst1,lst2);
+
+newl := [ ];
+n1 :=1;
+n2 :=1;
+
+len1 := #lst1;
+len2 := #lst2;
+if type(lst1(1)) = "TUPLE" then
+  while n1 <= len1 and n2 <= len2 loop
+   
+    if lst1(n1)(1) < lst2(n2)(1) then
+    	    newl with:= lst1(n1);
+	    n1 +:= 1;
+    else
+    	    newl with:= lst2(n2);
+	    	n2 +:= 1;
+    end if;
+    
+  end loop;
+  
+else
+  while n1 <= len1 and n2 <= len2 loop
+  
+    if lst1(n1) < lst2(n2) then
+    	    newl with:= lst1(n1);
+	    	n1 +:= 1;
+    else
+    	    newl with:= lst2(n2);
+	    n2 +:= 1;
+    end if;
+    
+  end loop;
+  
+end if;
+
+if n1 <= len1 then newl +:= lst1(n1..); else newl +:= lst2(n2..); end if;
+
+return newl;
+
+end merge;
+
+procedure kth(tup,k);  -- linear-time median finder
+
+if #tup < 11 then return merge_sort(tup)(k); end if;  -- handle small tuples by sorting
+
+tupsecs := [merge_sort(tup(n..n+4)): n in [1,6..#tup-4]];  -- otherwise arrange in sorted groups of 5
+middling_elt := kth([tupsec(3): tupsec in tupsecs], #tupsecs/2);  -- find elements not too near ends
+littles := [x: x in tup | x < middling_elt];  -- take the elements below middling,
+sames := [x: x in tup | x = middling_elt];   -- treating those equal to the middling cautiously
+littles +:= sames(1..#sames/2);
+
+return (if k <= #littles then kth(littles,k) else
+kth([x: x in tup | x > middling_elt] + sames((#sames/2) + 1..),k - #littles) end if);
+
+end kth;
+
+procedure ford_johnson(set_to_sort);  -- the Ford-Johnson comparison-efficient sort
+
+if #set_to_sort = 2 then  -- one comparison
+
+  x from set_to_sort; y from set_to_sort;
+    
+  if x > y then [x,y] := [y,x]; end if;
+    
+  return [x,y];
+    
+elseif #set_to_sort = 1 then
+
+  return [arb(set_to_sort)];
+    
+end if;
+
+-- otherwise we must proceed recursively
+
+half := { };  -- half the elements
+associated_elt := { };  -- map associating smaller with larger in pairs
+extra := OM;  -- will be non-OM if #set_to_sort is odd
+
+while set_to_sort /= { } loop  -- divide into pairs, with larger first
+
+  x from set_to_sort; y from set_to_sort;
+    
+  if y /= OM then -- set up pair
+      if x < y then [x,y] := [y,x]; end if;
+	associated_elt(x) := y;  -- establish association
+	half with:= x;  -- and put big elt in half to be sorted
+	
+  else
+      extra := x;
+  end if;
+    
+end loop;
+
+tup := ford_johnson(half);  -- sort the chosen half
+sorted := [associated_elt(tup(1))] + tup;  -- this section is now sorted
+
+-- next we work thru the associates of the remaining elements of tup, putting them into place using
+-- a binary search. Our concern is to use efficient binary searches as extensively as possible.
+-- Thus we first place all elements that can be place with just 2 comparisons, then 3 comparisons,
+-- etc, working backward thru these ranges, so that the destination of each element placed is
+-- 'sufficiently uncertain' for every comparison applied to give us one whole bit of new
+-- information. 
+
+power_of_2 := 4;  -- initialize 
+associates_total := 1; -- number of associates already placed
+tup := tup(2..);  -- tup(1) handled already
+
+while tup /= [ ] loop  -- this will be chewed up
+
+  next_piece := tup(1..last_ix := ((power_of_2 - 2 * associates_total) min #tup) max 1);
+  tup := tup(last_ix + 1 ..);
+    
+  if extra /= OM and #tup < (power_of_2 -  2 * associates_total) then  -- chance to handle the extra element
+
+      power_of_2 *:= 2;  -- advance to the next power of 2
+  
+  	sorted := put_in_place(sorted,power_of_2,extra);
+	extra := OM;  -- note that it has been handled
+	associates_total +:= 1;  -- note that one more 'associated_elt' has been placed
+  end if;
+  
+   
+  while (item frome next_piece) /= OM loop
+  
+    power_of_2 *:= 2;  -- advance to the next power of 2
+  
+    sorted := put_in_place(sorted,power_of_2,associated_elt(item));
+    							  -- put associated_elt in place by binary search
+							  
+    associates_total +:= 1;  -- note that one more associated_elt has been placed
+    
+    
+  end loop;
+  
+  
+end loop;
+
+if extra /= OM then -- insert this last element
+  sorted := put_in_place(sorted,OM,extra);
+end if;
+
+return sorted;  -- return the sorted array
+
+procedure put_in_place(sorted,power_of_2,elt);  -- modified binary search; no equal elements
+	-- searches up to power_of_2 - 1 unless OM, in which case the whole sorted array is searched
+bottom := 1;
+top := (if power_of_2/= OM then (power_of_2 - 1) min #sorted else #sorted end if);
+
+while top > bottom loop
+  middle := (top + bottom)/2;
+   if elt < sorted(middle) then
+     top := (middle -1) max bottom;
+   else
+     bottom := (middle +1) min top;
+   end if;
+end loop;
+
+if elt < sorted(top) then  -- place before the top (which is now the common value of top and bottom)
+  return (if top = 1 then [elt] + sorted else sorted(1..top-1) + [elt] + sorted(top..) end if);
+else -- place after the top
+  return (if top = #sorted then sorted + [elt] else sorted(1..top) + [elt] + sorted(top+1..) end if);
+end if;
+
+end put_in_place;
+
+end ford_johnson;
+
+procedure linsort(tup);
+
+-- 'optimistic' sort, which works well if there are only a limited number of up-and down runs.
+-- find a first run; then find the next, and merge with the first; continue this as long as tup 
+-- is not exhausted.
+
+n := 1;
+sorted := [ ];  -- prepare to build sorted tuple
+num_runs := 0;
+
+until return_sig = 0 loop  -- until signal that finished
+
+  [run,return_sig] := build_a_run(tup,n);
+    num_runs +:= 1;
+    
+  if return_sig = -1 then  -- decreasing run was returned
+      run := [run(#run + 1 - n): n in [1..#run]];
+  end if;
+  
+  sorted := (if sorted = [ ] then run else merge(sorted,run) end if);
+  
+end loop;
+
+return sorted;
+
+procedure merge(tup_a,tup_b);  -- merge two sorted tuples
+
+take_ptr_a := 1;
+take_ptr_b := 1;
+merged_tup := [ ];
+
+while (take_ptr_a <= #tup_a) and (take_ptr_b <= #tup_b) loop
+  if bigger(tup_a(take_ptr_a),tup_b(take_ptr_b)) then
+       merged_tup with:= tup_b(take_ptr_b);
+	 take_ptr_b +:= 1;
+  else
+       merged_tup with:= tup_a(take_ptr_a);
+	 take_ptr_a +:= 1;
+  end if;
+    
+end loop;
+
+-- and now handle the remaining elements
+
+if take_ptr_a <= #tup_a then
+
+  merged_tup  +:= tup_a(take_ptr_a..);
+    
+elseif take_ptr_b <= #tup_b then
+  merged_tup  +:= tup_b(take_ptr_b..);
+end if;
+  
+return merged_tup;
+
+end merge;
+
+end linsort;
+
+procedure build_a_run(tup,rw start_loc);
+
+   -- build a run starting at given location; return run and end signal
+   
+   start_l := start_loc;
+   
+ if #tup <= start_l then return [tup(start_l..),0]; end if;
+ 				-- zero or 1 element returned; finished signal
+				
+run := [tup(start_l)]; -- prepare to build a run
+
+start_l +:= 1;
+
+if bigger(tup(start_l - 1),tup(start_l)) then 
+				-- find a decreasing run; 
+								
+  while start_l <= #tup and bigger(tup(start_l - 1),tup(start_l)) loop 
+      run with:= tup(start_l);
+	start_l +:= 1;
+  end loop;
+  
+  start_loc:= start_l;
+  return [run,-1];  -- decreasing return
+
+else -- find an increasing run
+
+  while start_l <= #tup and bigger(tup(start_l),tup(start_l - 1)) loop 
+      run with:= tup(start_l);
+	start_l +:= 1;
+  end loop;
+  
+  start_loc:= start_l;
+  return [run,1];  -- increasing return
+  
+end if;
+
+start_loc:= start_l;
+
+return [run,false];
+
+end build_a_run;
+
+procedure bigger(a,b); -- comparison function
+
+if is_tuple(a) then 
+  return (if a(1) >= b(1) then true else false end if); 
+else 
+  return (if a >= b then true else false end if);
+end if;
+
+end bigger;
+
+procedure quicksort(values);  -- from the Doberkat collection
+
+-- This is a fast sorting algorithm taking time O(n*log n) where n is
+-- the number of values. The values are sorted recursively by picking one
+-- element of the tuple as a "pivot" and sorting the elements that are
+-- smaller and those that are greater than the pivot by QUICKSORT again.
+     check_if_tuple(values);
+     IF values = [] then
+          RETURN [];     -- an empty tuple is sorted
+     ELSE
+         pivot := values(1);    -- pick any element
+	   
+         RETURN  quicksort( [x IN values | x < pivot] ) +
+	                      [x IN values | x = pivot]   +
+		     quicksort( [x IN values | x > pivot] ) ;
+		     
+     END IF;
+     
+end quicksort;
+
+procedure swap(rw ind1,rw ind2);
+
+[values(ind1), values(ind2)] := [values(ind2), values(ind1)];
+
+end swap;
+
+procedure shellsort (values);  -- from the Doberkat collection
+
+-- A tuple or set of values is sorted in increasing order.
+-- An auxiliary sequence of increments is used to control the sorting
+-- process, the sequence begins with n/2 and ends with 1. Two values at
+-- the distance of the increment are swapped if they are out of order.
+
+     check_if_tuple (values);
+     
+     incr := #values / 2;
+     
+     WHILE incr > 0 loop
+         FOR i IN [incr+1 .. #values] loop
+	       j := i - incr;      -- two values at the distance INCR are
+		                     -- compared ...
+			   
+             WHILE j > 0 loop
+		     IF values (j) > values (j_plus := j+incr) then-- ... and swapped if they are out of order
+	                       [values(j), values(j_plus)] := [values(j_plus), values(j)];
+	                         j -:= incr;          -- get next two values at the
+                                       -- distance INCR
+                 ELSE
+		            j := 0;    -- quit inner loop if the values are in
+                 END IF;        -- the correct order
+		     END LOOP;
+         END LOOP;
+	   
+         incr /:= 2;    -- next INCR
+	   
+     END LOOP;
+     
+     RETURN values;
+     
+END shellsort;
+
+procedure check_if_tuple(rw values);
+
+-- This procedure checks whether the parameter of a procedure is a set or a
+-- tuple. A set is changed into a tuple.
+
+    IF IS_SET(values) then  -- change to tuple
+            values := [x : x IN values];   -- make it a tuple
+    ELSE
+            ASSERT IS_TUPLE(values);   -- only set or tuple allowed
+    END IF;
+    
+ end check_if_tuple;
+ 
+end sort_pak;
+
+-------------------------------------------------------------------------------------------------------
+
+class stack;
+
+procedure create(set_or_tup);
+end stack;
+
+class body stack;
+
+var stack_data,stack_pointer;  -- complete internal state of this class of object
+
+procedure create(set_or_tup);
+
+stack_data := (if is_tuple(set_or_tup) then set_or_tup else [x: x in set_or_tup] end if);  -- initialise state of new stack
+
+end create;
+
+
+procedure arb self;  -- top of stack
+
+if #stack_data > 0 then return stack_data(#stack_data); else return OM; end if; 
+
+end;
+
+procedure from self;  -- pop operation
+
+if #stack_data > 0 then -- pop
+  x := stack_data(#stack_data);
+   
+  stack_data(#stack_data) := OM;
+ else
+      x := OM;
+end if;
+
+return x;
+
+end;
+
+procedure self with x;
+
+stack_data with:= x;
+return self;
+
+end;
+
+procedure #self;
+return #stack_data;
+
+end;
+
+procedure iterator_start;  -- initializes for reverse-ordered iteration over stack
+
+stack_pointer := #stack_data + 1;
+
+end iterator_start;
+
+procedure iterator_next();  -- advances in reverse-ordered iteration
+
+if (stack_pointer -:= 1) = 0 then
+  return OM; 
+else
+  return [stack_data(stack_pointer)];
+end if;
+
+end iterator_next;
+
+procedure auxil;  -- to allow compilation
+
+end auxil;
+
+end stack;
+
+-------------------------------------------------------------------------------------------------------
+class up_heap;  -- SETL heap class, for comparison with corresponding 'package' realization
+
+procedure heap_assign(set_or_tup);  -- re-initialzes the heap using a set or tuple
+procedure create(set_or_tuple);
+-- creates and initializes a heap, in which maximum (rather than minimum) element can be accessed rapidly
+
+end up_heap;
+
+class body up_heap;  -- SETL heap package, for comparison with corresponding 'object' realization
+
+var
+  heap_vector; -- the vector of elements representing the heap
+  
+  
+procedure create(set_or_tuple);
+-- creates and initializes a heap, in which maximum (rather than minimum) element can be accessed rapidly
+
+-- first initialize the heap
+
+if heap_assign(set_or_tuple) = OM then  -- uses independently useable routine found below
+  return OM;  -- signal that argument is bad
+end if;
+
+-- else return a pointer to the heap object
+
+end create;
+
+procedure self with x; -- adds an element to the heap
+
+heap_vector with:= x;  -- add to end
+move_forward(#heap_vector);  -- move final element to the correct position
+
+return self;
+
+end;
+
+procedure self less x; -- deletes an element from the heap
+
+if not (exists n in [1..#heap_vector] | heap_vector(n) = x) then return self; end if;
+					-- since the element was not there
+					
+if #heap_vector = n then --  n is last position
+  heap_vector(n) := OM;
+    return; 
+    
+end if;
+
+other frome heap_vector;  -- otherwise move the tail element, creating a bad spot
+
+
+heap_vector(n) := other;
+reheap(n);  -- restore the heap property
+
+return self;
+
+end;
+
+procedure arb self;  -- returns the maximum element in the heap
+
+return if #heap_vector = 0 then OM else heap_vector(1) end if;  -- maximum is always first
+
+end;
+
+procedure iterator_start;  -- initializes for ordered iteration over heap
+end iterator_start;
+
+procedure iterator_next;  -- advances in ordered iteration
+
+if #heap_vector = 0 then -- empty heap
+  return OM;
+  end if;
+
+ 
+heap_elt := heap_vector(1);  -- maximum is always first
+other frome heap_vector;
+if heap_vector = [ ] then return [heap_elt]; end if;  -- no work on the heap in this case
+
+heap_vector(1) := other;  -- otherwise replace tail element, creating a 'bad spot' at the start
+move_back_spare(1);  -- fix it
+
+return [heap_elt];  -- and return the maximum
+
+end iterator_next;
+
+procedure from self;  -- returns and removes the maximum element in the heap
+if #heap_vector = 0 then return OM; end if; -- empty heap
+
+maxelt := heap_vector(1);  -- maximum is always first
+
+other frome heap_vector;
+if heap_vector = [ ] then return maxelt; end if;  -- the heap is empty in this case
+
+heap_vector(1) := other;  -- otherwise repace tail element, creating a 'bad spot' at the start
+move_back(1);  -- fix it
+
+return maxelt;  -- and return the maximum
+end;
+
+procedure #self;  -- returns the number of elements in the heap
+return #heap_vector;
+end;
+
+procedure heap_assign(set_or_tup);  -- re-initialzes the heap using a set or tuple
+
+if is_tuple(set_or_tup) then 
+  heap_vector:= set_or_tup; -- simply copy the argument
+  elseif is_set(set_or_tup) then
+  heap_vector:= [x: x in set_or_tup];  -- arrange the elements as a vector
+else
+  return OM;  -- signal that argument is bad
+end if;
+
+-- now we rearrange the elements as a heap, working forward from the end in the usual way
+
+for n in [#heap_vector,#heap_vector - 1..1] loop
+  move_back(n); -- bad spot is at n
+end loop;
+  
+return true;  -- signal of success
+
+end heap_assign;
+
+procedure move_back(n);  -- restores heap property from bad n to end of the heap
+
+bad_spot := n;  -- initial location of bad_spot
+
+while (new_bad := 2 * bad_spot) <= #heap_vector loop -- move elements around to push bad_spot
+  if (new_bad + 1) <= #heap_vector and heap_vector(new_bad + 1) > heap_vector(new_bad) then
+       new_bad := new_bad + 1;  -- this is the element for comparison
+  end if;
+    
+  if heap_vector(bad_spot) >= heap_vector(new_bad) then return; end if; -- we are done
+    
+  -- otherwise exchange the elements and move the bad_spot
+    [heap_vector(bad_spot),heap_vector(new_bad)] := [heap_vector(new_bad),heap_vector(bad_spot)];
+    bad_spot := new_bad;
+  
+end loop;  -- done here in any case
+
+end move_back;
+
+procedure move_back_spare(n);  -- restores heap property from bad n to end of the heap
+
+bad_spot := n;  -- initial location of bad_spot
+
+while (new_bad := 2 * bad_spot) <= #heap_vector loop -- move elements around to push bad_spot
+
+  if (new_bad + 1) <= #heap_vector and heap_vector(new_bad + 1) > heap_vector(new_bad) then
+       new_bad := new_bad + 1;  -- this is the element for comparison
+  end if;
+   
+  if heap_vector(bad_spot) >= heap_vector(new_bad) then return; end if; -- we are done
+    
+  -- otherwise exchange the elements and move the bad_spot
+  
+  [heap_vector(bad_spot),heap_vector(new_bad)] := [heap_vector(new_bad),heap_vector(bad_spot)];
+  
+  bad_spot := new_bad;
+    
+end loop;  -- done here in any case
+
+end move_back_spare;
+
+procedure move_forward(n);  -- restores heap property from bad n to front of the heap
+
+bad_spot := n;  -- initial location of bad_spot
+
+while (new_bad := bad_spot/2) >= 1 loop -- move elements around to push bad_spot
+  
+  if heap_vector(bad_spot) <= heap_vector(new_bad) then return; end if; -- we are done
+    
+  -- otherwise exchange the elements and move the bad_spot
+    [heap_vector(bad_spot),heap_vector(new_bad)] := [heap_vector(new_bad),heap_vector(bad_spot)];
+    bad_spot := new_bad;
+      
+end loop;  -- done here in any case
+
+end move_forward;
+
+procedure reheap(bad_spot);  -- restores heap property from initial bad n, moving forward or back as appropriate
+
+if (bad_spot > 1 and heap_vector(bad_spot) <= heap_vector(bad_spot/2)) or bad_spot = 1 then  -- must move back 
+  move_back(bad_spot);
+  else  -- must move forward
+  move_forward(bad_spot);
+  end if;
+  
+end reheap;
+
+end up_heap;
+
+-------------------------------------------------------------------------------------------------------
+
+class directable_heap; 
+	-- SECOND VERSION of SETL heap class, for comparison with corresponding 'package' realization
+	
+procedure heap_assign(set_or_tup);  -- re-initialzes the heap using a set or tuple
+procedure create(set_or_tuple,up_or_down);
+-- creates and initializes a heap, in which maximum (rather than minimum) element can be accessed rapidly
+procedure iterator_next;  -- advances in ordered iteration; needs to be visible to double heaps
+
+end directable_heap;
+
+class body directable_heap;
+		-- SECOND VERSION of SETL heap class, for comparison with corresponding 'package' realization
+		
+--											'DIRECTABLE HEAPS'
+
+-- The next task to be faced is that of creating a 'double heap', which allows both the maximum and
+-- the minimum of the multiset it holds to be obtained rapidly. The obvious thought is to use a 'down heap'
+-- perfectly symmetrical to the 'up_heap' just described, and to realize the 'double heap' as the
+-- union of these two structures, a nice chance to exploit 'inheritance'. However the problem
+-- immediately arises that when the minimum is 'min-picked' it must also be removed from
+-- the 'up-heap' data structure, and, as this has been written, such an operation would involve
+-- an inefficient search. So the necessary first step is to rework the 'up_heap' package to
+-- make the removal operation efficient. Once this requirement is recognized, it is easily accomodated
+-- by including a map which gives the position(s) in the heap of each element held; of course,
+-- surgery is required on the preceding code. 
+
+--  The modified package which results is written to handle bot the 'up' and the'down' cases, and is as follows:
+
+var
+  direction_flag, -- boolean flag bound to control direction of heap; true = up; false = down
+  places_in_heap, -- maps each element in the heap to the set of all places in which it occurs
+  heap_vector; -- the vector of elements representing the heap
+    
+procedure create(set_or_tuple,up_or_down);
+-- creates and initializes a heap, in which maximum (rather than minimum) element can be accessed rapidly
+-- first initialize the heap
+direction_flag := up_or_down;
+if heap_assign(set_or_tuple) = OM then  -- uses independently useable routine found below
+  return OM;  -- signal that argument is bad
+end if;
+-- else return a pointer to the heap object
+return self;  -- note that this should be the responsibility of the hook$create routine
+
+end;
+
+procedure self with x; -- adds an element to the heap
+heap_vector with:= x;  -- add to end
+places_in_heap(x) := (places_in_heap(x)?{ }) with #heap_vector;  -- note new place
+
+move_forward(#heap_vector);  -- move final element to the correct position
+
+return self;
+
+end;
+
+procedure self less x; -- deletes an element from the heap
+if (x_places := places_in_heap(x)) = OM then return; end if;
+					-- since the element was not there
+  n from x_places;  -- a place where x is
+  
+if #heap_vector = n then --  n is last position
+  heap_vector(n) := OM;
+  places_in_heap(x) := if x_places = { } then OM else x_places end if;
+  return self;
+end if;
+
+old_len := #heap_vector; -- get the last position in the heap vector
+other frome heap_vector;  -- move the tail element, creating a bad spot
+heap_vector(n) := other;
+places_in_heap(x) := if x_places = { } then OM else x_places end if;  -- remove one 'x-location'
+places_in_heap(other) := (places_in_heap(other) less old_len) with n;  -- note move of other
+reheap(n);  -- restore the heap property
+
+return self;
+
+end;
+
+procedure arb self;  -- returns the maximum element in the heap
+
+return if #heap_vector = 0 then OM else heap_vector(1) end if;  -- maximum is always first
+
+end;
+
+procedure from self;  -- returns and removes the maximum element in the heap
+
+if #heap_vector = 0 then return OM; end if; -- empty heap
+
+maxelt := heap_vector(1);  -- maximum is always first
+maxelt_places := places_in_heap(maxelt) less 1; -- where maximum still occurs
+
+old_len := #heap_vector; -- get the last position in the heap vector
+other frome heap_vector;  -- move the tail element, creating a bad spot
+
+if heap_vector = [ ] then  -- the heap is empty in this case
+  places_in_heap := { };  -- corresponding to empty heap
+    return maxelt;
+end if; 
+
+heap_vector(1) := other;
+places_in_heap(maxelt) := if maxelt_places = { } then OM else maxelt_places end if;
+			-- have removed one 'maxelt-location'
+places_in_heap(other) := (places_in_heap(other) less old_len) with 1;  -- note move of other
+move_back(1);  -- fix it
+
+return maxelt;  -- and return the maximum
+
+end;
+
+procedure iterator_start;  -- initializes for ordered iteration over heap
+
+end iterator_start;
+
+procedure iterator_next;  -- advances in ordered iteration
+if #heap_vector = 0 then -- empty heap
+  return OM;
+ 
+ 
+end if;
+
+heap_elt := heap_vector(1);  -- maximum is always first
+maxelt_places := places_in_heap(heap_elt) less 1; -- where maximum still occurs
+
+old_len := #heap_vector; -- get the last position in the heap vector
+other frome heap_vector;  -- move the tail element, creating a bad spot
+
+if heap_vector = [ ] then  -- the heap needs no work in this case
+  places_in_heap := { };  -- corresponding to empty heap
+  return [heap_elt];
+end if; 
+
+heap_vector(1) := other;
+places_in_heap(heap_elt) := if maxelt_places = { } then OM else maxelt_places end if;
+			-- have removed one 'maxelt-location'
+places_in_heap(other) := (places_in_heap(other) less old_len) with 1;  -- note move of other
+
+move_back_spare(1);  -- fix it
+
+return [heap_elt];  -- and return the maximum
+
+end iterator_next;
+
+procedure #self;  -- returns the number of elements in the heap
+return #heap_vector;
+end;
+
+procedure heap_assign(set_or_tup);  -- re-initialzes the heap using a set or tuple
+
+
+if is_tuple(set_or_tup) then 
+ heap_vector:= set_or_tup; -- simply copy the argument
+elseif is_set(set_or_tup) then
+  heap_vector:= [x: x in set_or_tup];  -- arrange the elements as a vector
+else
+  return OM;  -- signal that argument is bad
+end if;
+
+places_in_heap := {[x,n]: x = heap_vector(n)};  -- null out the places_in_heap map
+
+places_in_heap := {[x,places_in_heap{x}] : x in domain places_in_heap}; -- convert to set_valued map
+
+-- now we rearrange the elements as a heap, working forward from the end in the usual way
+
+for n in [#heap_vector,#heap_vector - 1..1] loop
+  move_back(n); -- bad spot is at n
+end loop;
+
+return true;  -- signal of success
+
+end heap_assign;
+
+procedure move_back(n);  -- restores heap property from bad n to end of the heap
+
+bad_spot := n;  -- initial location of bad_spot
+
+if direction_flag then
+
+while (new_bad := 2 * bad_spot) <= #heap_vector loop -- move elements around to push bad_spot
+
+  if (new_bad + 1) <= #heap_vector and (heap_vector(new_bad + 1) > heap_vector(new_bad)) then
+       new_bad := new_bad + 1;  -- this is the element for comparison
+  end if;
+    
+  if (bad_spot_elt := heap_vector(bad_spot)) >= (new_bad_elt := heap_vector(new_bad)) then     
+  return;
+  end if; -- we are done
+    
+  -- otherwise exchange the elements and move the bad_spot
+  [heap_vector(bad_spot),heap_vector(new_bad)] := [heap_vector(new_bad),heap_vector(bad_spot)];
+  places_in_heap(bad_spot_elt) := (places_in_heap(bad_spot_elt) less bad_spot) with new_bad;
+  places_in_heap(new_bad_elt) := (places_in_heap(new_bad_elt) less new_bad) with bad_spot;
+  bad_spot := new_bad;
+    
+end loop;  -- done here in any case
+
+else
+
+while (new_bad := 2 * bad_spot) <= #heap_vector loop -- move elements around to push bad_spot
+  if (new_bad + 1) <= #heap_vector and (heap_vector(new_bad + 1) < heap_vector(new_bad)) then
+       new_bad := new_bad + 1;  -- this is the element for comparison
+  end if;
+   
+  if (bad_spot_elt := heap_vector(bad_spot)) <= (new_bad_elt := heap_vector(new_bad)) then 
+      return;
+	
+  end if; -- we are done
+    
+  -- otherwise exchange the elements and move the bad_spot
+  [heap_vector(bad_spot),heap_vector(new_bad)] := [heap_vector(new_bad),heap_vector(bad_spot)];
+  places_in_heap(bad_spot_elt) := (places_in_heap(bad_spot_elt) less bad_spot) with new_bad;
+  places_in_heap(new_bad_elt) := (places_in_heap(new_bad_elt) less new_bad) with bad_spot;
+  bad_spot := new_bad;
+    
+end loop;  -- done here in any case
+
+end if;
+
+end move_back;
+
+procedure move_back_spare(n);  -- restores heap property from bad n to end of the heap
+
+bad_spot := n;  -- initial location of bad_spot
+
+if direction_flag then
+
+while (new_bad := 2 * bad_spot) <= #heap_vector loop -- move elements around to push bad_spot
+  if (new_bad + 1) <= #heap_vector and heap_vector(new_bad + 1) > heap_vector(new_bad) then
+    new_bad := new_bad + 1;  -- this is the element for comparison
+  end if;
+    
+  if (bad_spot_elt := heap_vector(bad_spot)) >= (new_bad_elt := heap_vector(new_bad)) then 
+  return;
+  end if; -- we are done
+   
+  -- otherwise exchange the elements and move the bad_spot
+  [heap_vector(bad_spot),heap_vector(new_bad)] := [heap_vector(new_bad),heap_vector(bad_spot)];
+  places_in_heap(bad_spot_elt) := (places_in_heap(bad_spot_elt) less bad_spot) with new_bad;
+  places_in_heap(new_bad_elt) := (places_in_heap(new_bad_elt) less new_bad) with bad_spot;
+  bad_spot := new_bad;
+   
+end loop;  -- done here in any case
+
+else
+
+while (new_bad := 2 * bad_spot) <= #heap_vector loop -- move elements around to push bad_spot
+
+  if (new_bad + 1) <= #heap_vector and heap_vector(new_bad + 1) < heap_vector(new_bad) then
+      new_bad := new_bad + 1;  -- this is the element for comparison
+  end if;
+    
+  if (bad_spot_elt := heap_vector(bad_spot)) <= (new_bad_elt := heap_vector(new_bad)) then 
+      return;
+  end if; -- we are done
+    
+  -- otherwise exchange the elements and move the bad_spot
+  [heap_vector(bad_spot),heap_vector(new_bad)] := [heap_vector(new_bad),heap_vector(bad_spot)];
+  places_in_heap(bad_spot_elt) := (places_in_heap(bad_spot_elt) less bad_spot) with new_bad;
+  places_in_heap(new_bad_elt) := (places_in_heap(new_bad_elt) less new_bad) with bad_spot;
+  bad_spot := new_bad;
+  
+end loop;  -- done here in any case
+
+end if;
+
+end move_back_spare;
+
+procedure move_forward(n);  -- restores heap property from bad n to front of the heap
+
+bad_spot := n;  -- initial location of bad_spot
+
+if direction_flag then
+ while (new_bad := bad_spot/2) >= 1 loop -- move elements around to push bad_spot
+   if (bad_spot_elt := heap_vector(bad_spot)) <= (new_bad_elt := heap_vector(new_bad)) then 
+       return;
+  end if; -- we are done
+   
+  -- otherwise exchange the elements and move the bad_spot
+  [heap_vector(bad_spot),heap_vector(new_bad)] := [heap_vector(new_bad),heap_vector(bad_spot)];
+  places_in_heap(bad_spot_elt) := (places_in_heap(bad_spot_elt) less bad_spot) with new_bad;
+  places_in_heap(new_bad_elt) := (places_in_heap(new_bad_elt) less new_bad) with bad_spot;
+  bad_spot := new_bad;
+  
+end loop;  -- done here in any case
+
+else
+
+while (new_bad := bad_spot/2) >= 1 loop -- move elements around to push bad_spot
+
+  if (bad_spot_elt := heap_vector(bad_spot)) >= (new_bad_elt := heap_vector(new_bad)) then 
+      return;
+  end if; -- we are done
+   
+  -- otherwise exchange the elements and move the bad_spot
+  [heap_vector(bad_spot),heap_vector(new_bad)] := [heap_vector(new_bad),heap_vector(bad_spot)];
+  places_in_heap(bad_spot_elt) := (places_in_heap(bad_spot_elt) less bad_spot) with new_bad;
+  places_in_heap(new_bad_elt) := (places_in_heap(new_bad_elt) less new_bad) with bad_spot;
+  bad_spot := new_bad;
+
+end loop;  -- done here in any case
+
+end if;
+end move_forward;
+
+procedure reheap(bad_spot);  -- restores heap property from initial bad n, moving forward or back as appropriate
+
+if (bad_spot > 1 and heap_vector(bad_spot) <= heap_vector(bad_spot/2)) or bad_spot = 1 then  -- must move back 
+  move_back(bad_spot);
+else  -- must move forward
+  move_forward(bad_spot);
+end if;
+
+end reheap;
+
+end directable_heap;  -- end of second version of 'up_heap' package
+
+-------------------------------------------------------------------------------------------------------
+
+class double_heap; -- THIRD VERSION of SETL heap class
+
+procedure heap_assign(set_or_tuple);  -- re-initialzes the heap using a set or tuple
+procedure pickmin;  -- use the down_heap and correct the up_heap
+procedure minof;  -- use the down_heap
+procedure create(set_or_tuple);
+-- creates and initializes a heap, in which maximum (rather than minimum) element can be accessed rapidly
+end double_heap;
+
+class body double_heap; -- THIRD VERSION of SETL heap class
+
+use directable_heap;  -- build double heaps using prior data structures
+
+var
+
+  up_heap_part,down_heap_part; -- the two data structures used
+  
+procedure create(set_or_tuple);  -- creates and initializes a double_heap
+
+up_heap_part := directable_heap(set_or_tuple,true);  -- create the two substructures
+down_heap_part := directable_heap(set_or_tuple,false);
+
+end create;
+
+procedure self with x;  -- perform the operation for both substructures
+
+up_heap_part with:= x;
+down_heap_part with:= x;
+
+end;
+
+procedure self less x;  -- perform the operation for both substructures
+
+up_heap_part less:= x;
+down_heap_part less:= x;
+
+end;
+
+procedure arb self;  -- use the up_heap
+
+return arb up_heap_part;
+
+end;
+
+procedure iterator_start;  -- initializes for ordered iteration over heap
+
+end iterator_start;
+
+procedure iterator_next;  -- advances in ordered iteration
+
+return up_heap_part.iterator_next();
+
+end iterator_next;
+
+procedure minof;  -- use the down_heap
+
+return arb down_heap_part;
+
+end minof;
+
+procedure from self;  -- use the up_heap and correct the down_heap
+
+item from up_heap_part;
+down_heap_part less:= item;
+return item;
+
+end;
+
+procedure pickmin;  -- use the down_heap and correct the up_heap
+
+item from down_heap_part;
+up_heap_part less:= item;
+return item;
+
+end pickmin;
+
+procedure #self;  -- use the up_heap
+
+return #up_heap_part;
+
+end;
+
+procedure heap_assign(set_or_tuple);  -- perform the operation for both substructures
+
+up_heap_part.heap_assign(set_or_tuple);
+down_heap_part.heap_assign(set_or_tuple);
+end;
+
+end double_heap;
+
+-------------------------------------------------------------------------------------------------------
+
+
+package random;
+
+procedure random_set(n);
+-- returns a n-elements set with random values, if n > 0;
+--           random (1..100) element set with random value, otherwise.
+
+procedure random_tuple(n);
+-- returns a n-elements tuple with random values, if n > 0;
+--           random (1..100) element tuple with random value,othewise.
+end random;
+
+package body random;
+
+procedure random_set(n);
+
+source_set := { x: x in [-1000..1000]} ;
+--              { float(x)/2.2: x in [-100..100]};
+if n = om or n <= 0 then   n := arb({1..100}); end if;
+   
+result_set := {};   
+
+for i in [1..n] loop
+    x := arb(source_set);  
+    result_set with := x;  
+     source_set less := x;
+end loop;
+
+return result_set;
+
+end random_set;
+
+
+procedure random_tuple(n);
+
+return [x: x in random_set(n)];
+
+end random_tuple;
+
+end random;
+
+
+
+------------------------------------------------------------------------------------------------------
+
+-- Part II 
+-- ======
+-- This part is testing programs for :
+--   a) sorting procedures in package sort_pak;
+--   b) a stack object  -- class stack;
+--   c) several heap objects -- class up_heap,directable_heap,double_heap;
+--   d) and some set operations.
+
+-------------------------------------------------------------------------------------------------------
+
+--
+-- test sorting procedures in sort_pak.
+-- ===================================
+--
+
+program test_program; -- tests of mergesorts, ford_johnson sort, linsort, 
+                      -- quicksort, and shellsort with  random sets or tuples
+use sort_pak, random, Test_Common;
+
+Begin_Test("testing sort procedures with random sets or tuples");
+
+for k in [1..15] loop
+
+   set_to_sort := random_set(k);
+   tup_to_sort := random_tuple(k);
+
+-- tests merge_sort and iterative_merge_sort
+
+   tup_sorted := merge_sort(set_to_sort);  
+   ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+   if not ok  then Log_Error(["merge_sort failed!",
+                              "set_to_sort = " + str(set_to_sort),
+	                        "tup_sorted = " + str(tup_sorted)]);
+   end if;
+   tup_sorted := merge_sort(tup_to_sort);
+   ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+   if  not ok   then Log_Error(["merge_sort failed!",
+                                "tup_to_sort = " + str(tup_to_sort),
+		                    "tup_sorted = " + str(tup_sorted)]);
+   end if;   
+   tup_sorted := iterative_merge_sort(tup_to_sort);
+   ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+   if  not ok   then Log_Error(["iterative_merge_sort failed!",
+                                "tup_to_sort = " + str(tup_to_sort),
+		                    "tup_sorted = " + str(tup_sorted)]);
+   end if;   
+   
+-- tests ford_johnson sort
+
+   tup_sorted := ford_johnson(set_to_sort);
+   ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+   if not ok  then Log_Error(["ford_johnson sort failed!",
+                              "set_to_sort = " + str(set_to_sort),
+	                        "tup_sorted = " + str(tup_sorted)]);
+   end if;
+
+-- tests linsort
+
+   tup_sorted := linsort(tup_to_sort);
+   ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+   if not ok  then Log_Error(["linsort failed!",
+                              "tup_to_sort = " + str(tup_to_sort),
+	                        "tup_sorted = " + str(tup_sorted)]);
+   end if;
+
+-- tests quicksort
+
+   tup_sorted := quicksort(tup_to_sort);
+   ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+   if not ok  then Log_Error(["quicksort failed!",
+                              "tup_to_sort = " + str(tup_to_sort),
+	                        "tup_sorted = " + str(tup_sorted)]);
+   end if;
+   
+-- tests shellsort
+
+   tup_sorted := shellsort(tup_to_sort);
+   ok := forall i in [1..#tup_sorted-1] | tup_sorted(i) <= tup_sorted(i+1);
+   if not ok  then Log_Error(["shellsort failed!",
+                              "tup_to_sort = " + str(tup_to_sort),
+	                        "tup_sorted = " + str(tup_sorted)]);
+   end if;
+
+end loop;
+
+End_Test;
+
+end test_program; 

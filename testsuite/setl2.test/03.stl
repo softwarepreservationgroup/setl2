@@ -1,0 +1,12 @@
+program test_program;
+
+   use Test_Common;
+
+   Begin_Test("Integer divide by zero");
+
+   x := 100; y := 0;
+   x := x mod y;
+
+   End_Test;
+
+end test_program;

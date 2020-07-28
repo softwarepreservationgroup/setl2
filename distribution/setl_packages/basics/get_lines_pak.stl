@@ -1,0 +1,323 @@
+class get_lines_obj; 		-- line-reader object
+
+	procedure create(file_name); 		-- creation routine		
+
+end get_lines_obj;
+
+class body get_lines_obj; 		-- line-reader object
+	var handle;
+	
+	procedure create(file_name); 		-- creation routine	
+		fn:= file_name; 	
+		handle := open(file_name,"TEXT-IN");
+		return self;
+	end create;
+	
+	procedure iterator_start();  end iterator_start;		-- required dummy
+	
+	procedure iterator_next(); 		-- iteration routine		
+		geta(handle,line);
+		if line = OM then close(handle); return OM; end if;
+		
+		return [line];
+	end iterator_next;
+
+end get_lines_obj;
+
+package get_lines_pak;
+
+	procedure get_lines(file_name);   	-- gets all lines in file as vector
+	procedure get_file(file_name); 		-- gets entire file as one big string
+	procedure gett_lines(file_name);	-- return  lines-reader object
+	procedure get_line(file_name);   	-- reads one line from file; closes at end
+	procedure close_lines(file_name);   -- closes file implicitly opened by get_line
+
+	procedure read_named_data(name_of_source_file);
+-- reads sections of data and lines, named by preceding headers of the form
+-- DATA_FOR_data_item_name and DATA_FOR_LINES_data_item_name; see more deaild comments below.
+
+	procedure url_get(url,targ_file,data_set);			-- returns url contents as a string
+	procedure url_fetch(url,targ_file,data_set);		-- stores url contents as in a file
+	procedure url_postget(url,targ_file,data_set);		-- returns url contents as a string, post method
+	procedure url_postfetch(url,targ_file,data_set);	-- stores url contents as in a file, post method
+	procedure url_ftp(url,targ_file);					-- stores url contents as in a file, ftp method
+	procedure url_ftpfetch(url,targ_file);				-- stores url contents as in a file, ftp method
+
+	procedure print_set(the_set);
+    -- prints tuples and sets element by element, with indentation
+
+end get_lines_pak;
+
+package body get_lines_pak;
+	use get_lines_obj; 		-- line-reader object
+	var handles := {};		-- maps file name into handle
+	
+	procedure gett_lines(file_name);		--  return  lines-reader object
+		return get_lines_obj(file_name);
+	end gett_lines;
+
+procedure get_line(file_name);   	-- reads one line from file; closes at end
+
+	if (ihandle := handles(file_name)) = OM then		-- file must be opened
+		ihandle := open(file_name,"TEXT-IN"); handles(file_name) := ihandle;
+	end if;
+	
+	geta(ihandle,line);
+	if line = OM then close(ihandle); handles(file_name) := OM; return OM; end if;
+	return line;
+	
+end get_line;
+
+procedure close_lines(file_name);   	-- closes file implicitly opened by get_line
+
+	if (ihandle := handles(file_name)) /= OM then		-- file must be closed
+		close(ihandle); handles(file_name) := OM;
+	end if;
+
+end close_lines;
+
+procedure get_lines(file_name);
+
+if not fexists(file_name) then
+  print("ERROR ******* nonexistent file ",file_name);
+  return [ ];  -- take as empty
+end if;
+
+file_handle := open(file_name,"TEXT-IN");
+
+lines := [ ];
+
+while true loop
+   geta(file_handle,x);
+   if not eof() then lines with:= x; else exit; end if;
+end loop;
+
+close(file_handle);  -- avoid buildup
+
+return lines;
+
+end get_lines;
+
+procedure read_lines(file_name);
+			  -- reads succession of lines in SETL or line format
+			  
+if not fexists(file_name) then
+  print("ERROR ******* nonexistent file ",file_name);
+  return [ ];  -- take as empty
+end if;
+
+file_handle := open(file_name,"TEXT-IN");		-- open the input file
+
+data := [ ];									-- data tuple is initially null
+
+reading_as_lines := true; was_header := false;			-- initially not in reading_as_lines mode
+
+loop
+			-- read either a line or an entire SETL data object
+	
+--	if  eof() then exit; end if;	-- end of file
+
+	if reading_as_lines then 
+		geta(file_handle,x); if eof() then exit; end if;
+	else 
+		reada(file_handle,x); if eof() then exit; end if; 
+		reading_as_lines := true; was_header := false;
+		data with:= x;			-- add data blob just read 
+		continue;				-- advance to next read
+	end if;
+   			-- here we have always just read a line
+	if match(x,"DATA_FOR_LINES_") /= "" then
+			  --  we are beginning a new lines section
+	
+	   data with:= line_tup; line_tup := [ ]; was_header := true;
+					-- collect and rezero the accumulated lines (will be OM if SETL read preceded)
+	   data with:= "DATA_FOR_" + x;    -- collect the next header
+	 
+	elseif match(x,"DATA_FOR_") /= "" then
+					-- we are beginning a new SETL data section
+	
+	   data with:= line_tup; line_tup := OM;
+					-- collect and rezero the accumulated lines (will be OM if SETL read preceded)
+	   data with:= "DATA_FOR_" + x;    -- collect the header
+	   
+	   reading_as_lines := false;  -- enter the 'reading as SETL' mode
+	 
+	elseif was_header then  -- just collect the line
+	 
+	   line_tup with:= x;
+	   
+	end if;
+
+end loop;
+
+if reading_as_lines then data with:= line_tup; end if;  -- collect the last item
+
+close(file_handle);  -- avoid buildup
+
+return data;
+
+end read_lines;
+
+procedure read_named_data(name_of_source_file);
+	-- reads sections of data and lines, named by preceding headers of the form
+	-- DATA_FOR_data_item_name and DATA_FOR_LINES_data_item_name
+	-- the file being read must consit of alternating header lines of the form
+	-- DATA_FOR_data_item_name or DATA_FOR_LINES_data_item_name and data sections.
+	-- Each data section of the first kind should be a single SETL data object in string form;
+	-- each data section of the second kind should be a series of lines, terminated by a
+	-- line of either of the two header forms. The lines in a DATA_FOR_LINES block are converted
+	-- into a tuple of strings. This basic work is done by the preceding read_lines routine, chich converts the 
+	-- input data into an alernating string of DATA_FOR_ headers and data items,
+	-- which this routine simply converts into a map and returns.
+	-- if a tag is reated, the data given for it is accumulated into a tuple.
+
+data := read_lines(name_of_source_file);  -- read the list of data sections
+--print("data: ",data);
+data_map := numoccs := { };  -- will map odd lines to even
+
+for j in [1,3..#data] loop
+
+	  if not (is_string(item_name := data(j)) and match(item_name,"DATA_FOR_") /= "") then  -- bad name
+		print("READ ERROR: ****** bad data item name read as item ",j,". Item is: ",item_name);
+		stop;
+	  end if;
+	  
+	  numoccs(item_name) := no := (numoccs(item_name)?0) + 1;
+	  if no = 1 then
+		data_map(item_name) := data(j + 1);		-- accumulatee data if tag is repeated
+	  elseif no = 2 then
+		data_map(item_name) := [data_map(item_name)] with data(j + 1);	-- accumulate data if tag is repeated
+	  else
+		data_map(item_name) := data_map(item_name) with data(j + 1);		-- accumulate data if tag is repeated
+	  end if;
+  
+end loop;
+
+return data_map;
+
+end read_named_data;
+
+procedure print_set(the_set);
+    -- prints tuples and sets element by element, with indentation
+
+print_set_in(the_set,0);
+
+procedure print_set_in(the_set,indentation_level);  -- recursive workhorse
+
+if (is_set(the_set) or is_tuple(the_set)) and (#the_set > 4 
+		or (exists item in the_set | is_set(item) or is_tuple(item))) then
+  for item in the_set loop print_set_in(item,indentation_level + 1); end loop;
+else
+  print(indentation_level * "  ",the_set);
+end if;
+
+end print_set_in;
+
+end print_set;
+	
+procedure get_file(file_name);  -- gets entire file as one big string
+	
+	if not fexists(file_name) then
+ 		print("ERROR ******* nonexistent file " + file_name);
+  		return "ERROR ******* nonexistent file " + file_name;  
+	end if;
+
+	file_handle := open(file_name,"RANDOM");
+	nchars := fsize(file_handle);
+	gets(file_handle,1,nchars,stg);
+	close(file_handle);
+	
+	return stg;
+	
+end get_file;
+
+procedure url_get(url,targ_file,data_set);		-- returns url contents as a string
+
+	match( url,"http://");			-- remove protocol prefix if present
+	string_of_ds := "" +/ [" -d \""  + x + "\"": x in data_set];
+	unix_command := "curl -G " + string_of_ds + " -o " + targ_file + " http://" + url;
+	system(unix_command);
+	return get_lines(targ_file);
+
+end url_get;
+
+procedure url_fetch(url,targ_file,data_set);		-- stores url contents as in a file
+
+	match( url,"http://");			-- remove protocol prefix if present
+	string_of_ds := "" +/ [" -d \""  + x + "\"": x in data_set];
+	unix_command := "curl -G " + string_of_ds + " -o " + targ_file + " http://" + url;
+	system(unix_command);
+
+end url_fetch;
+
+procedure url_postget(url,targ_file,data_set);		-- returns url contents as a string, post method
+
+	match( url,"http://");			-- remove protocol prefix if present
+	string_of_ds := "" +/ [" -d \""  + x + "\"": x in data_set];
+	unix_command := "curl " + string_of_ds + " -o " + targ_file + " http://" + url; --print("unix_command: ",unix_command);
+	system(unix_command);
+	return get_lines(targ_file);
+
+end url_postget;
+
+procedure url_postfetch(url,targ_file,data_set);		-- stores url contents as in a file, post method
+
+	match( url,"http://");			-- remove protocol prefix if present
+	string_of_ds := "" +/ [" -d \""  + x + "\"": x in data_set];
+	unix_command := "curl " + string_of_ds + " -o " + targ_file + " http://" + url;
+	system(unix_command);
+
+end url_postfetch;
+
+procedure url_ftp(url,targ_file);		-- stores url contents as in a file, ftp method
+
+	match( url,"ftp://");			-- remove protocol prefix if present
+	unix_command := "curl " + " -o " + targ_file + " ftp://" + url; 
+	system(unix_command);
+	return get_lines(targ_file);
+
+end url_ftp;
+
+procedure url_ftpfetch(url,targ_file);		-- stores url contents as in a file, ftp method
+
+	match( url,"ftp://");			-- remove protocol prefix if present
+	unix_command := "curl " + " -o " + targ_file + " ftp://" + url; 
+	system(unix_command);
+
+end url_ftpfetch;
+
+end get_lines_pak;
+
+program test;
+	use get_lines_pak,string_utility_pak;
+	vals_map := {["x", {1, 2, 3}], ["u", ["abyy..", "cd ef"]], ["y", [{4, 2, 3}, {40, 2, 3}, 
+					["{40,", "2,3}", ""]]], ["z", ["ab", "cd ef"]], ["w", [["abxx", "cd ef"], 
+						["abyy", "cd ef"], ["abzz", "cd ef"]]]};
+	
+	tf := "test_files/read_named_data_testfile";
+	
+	print(read_named_data(tf) = vals_map); print(read_named_data(tf) = vals_map);
+	print(get_lines(tf) = breakup(get_file(tf),"\r"));
+	print(get_lines(tf) = [x: x in gett_lines(tf)]);
+	
+	lines := [];
+	while (line := get_line(tf)) /= OM loop
+		lines with:= line;
+	end loop;
+	print(lines = get_lines(tf));
+
+	contents := url_get("www.google.com/imghp","test_files/junk",{"hl=en","tab=wi","q="});
+	url_fetch("www.google.com/imghp",targ_file := "test_files/junk2",{"hl=en","tab=wi","q="});
+	
+	contents2 := url_postget("http://www.settheory.com/Setl2/post_test.php","test_files/junky",
+				params := breakup("Id=gongurolf;to_check=1..100000;to_pretty=ugly",";"));
+	url_postfetch("http://www.settheory.com/Setl2/post_test.php",targ_file2 := "test_files/junk3",params);
+	
+	contents3 := url_ftp("ftp://www.multimedialibrary.com/midi/inv12.mid","test_files/junkftp");
+	url_ftpfetch("ftp://www.multimedialibrary.com/midi/inv12.mid",targ_file3 := "test_files/junkftp2");
+	
+	print(contents = get_lines(targ_file));
+	print(contents2 = get_lines(targ_file2));
+	print(contents3 = get_lines(targ_file3));
+	
+end test;
